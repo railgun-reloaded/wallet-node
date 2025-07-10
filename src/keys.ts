@@ -4,7 +4,7 @@ import * as ed25519 from '@noble/ed25519'
 import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
-import { eddsa, eddsaBuild, initCircomlib, initializeEddsa, poseidonBuild, poseidonFunc } from '@railgun-reloaded/cryptography'
+import { eddsa, initCircomlib, initializeEddsa, poseidonBuild, poseidonFunc } from '@railgun-reloaded/cryptography'
 
 import {
   bigintToUint8Array,
@@ -53,11 +53,7 @@ const initializeCryptographyLibs = async () => {
 const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] => {
   // convert this from
   if (privateKey.length !== 32) throw Error('Invalid private key length')
-  return eddsaBuild
-    .prv2pub(privateKey)
-    .map((element: any) =>
-      eddsaBuild.F.fromMontgomery(element).reverse()
-    ) as [Uint8Array, Uint8Array]
+  return eddsa.privateKeyToPublicKey(privateKey)
 }
 
 /**
