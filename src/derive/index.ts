@@ -41,9 +41,12 @@ const derivePathsForIndex = (index: number = 0) => {
 }
 
 /**
- *
- * @param mnemonic
- * @param index
+ * Derives wallet nodes for spending and viewing purposes based on a mnemonic and an optional index.
+ * @param mnemonic - The mnemonic phrase used to generate the wallet nodes.
+ * @param index - The index used to derive specific paths (default is 0).
+ * @returns An object containing the derived wallet nodes:
+ *          - `spending`: The wallet node for spending operations.
+ *          - `viewing`: The wallet node for viewing operations.
  */
 const deriveNodes = (
   mnemonic: string,
