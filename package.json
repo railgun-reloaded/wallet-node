@@ -10,7 +10,7 @@
     "pretest": "npm run build",
     "test": "npx mocha ./test/**/*.test.js",
     "prepack": "npm run build",
-    "postinstall": "cd ./node_modules/@railgun-reloaded/0zk-addresses && yarn && yarn build"
+    "postinstall": "./postinstall.sh"
   },
   "repository": {
     "type": "git",
