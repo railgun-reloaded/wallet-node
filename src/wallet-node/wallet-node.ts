@@ -55,7 +55,7 @@ export class WalletNode {
    * @param keyNode - An instance of the KeyNode class containing the chain key and chain code
    *                  used to initialize the WalletNode.
    */
-  constructor (keyNode: KeyNode) {
+  constructor(keyNode: KeyNode) {
     this.chainKey = keyNode.chainKey
     this.chainCode = keyNode.chainCode
   }
@@ -65,7 +65,7 @@ export class WalletNode {
    * @param mnemonic - The mnemonic phrase used to generate the wallet node.
    * @returns A new `WalletNode` instance derived from the mnemonic.
    */
-  static fromMnemonic (mnemonic: string): WalletNode {
+  static fromMnemonic(mnemonic: string): WalletNode {
     const seed = Mnemonic.toSeed(mnemonic)
     return new WalletNode(getMasterKeyFromSeed(seed))
   }
@@ -75,7 +75,7 @@ export class WalletNode {
    * @param path - path to derive along
    * @returns - new BIP32 implementation Node
    */
-  derive (path: string): WalletNode {
+  derive(path: string): WalletNode {
     // Get path segments
     const segments = getPathSegments(path)
 
@@ -95,7 +95,7 @@ export class WalletNode {
    * Get spending key-pair
    * @returns keypair
    */
-  getSpendingKeyPair (): SpendingKeyPair {
+  getSpendingKeyPair(): SpendingKeyPair {
     const privateKey = this.chainKey
     const pubkey = getPublicSpendingKey(privateKey)
     return {
@@ -113,15 +113,13 @@ export class WalletNode {
    * Ensure that the input keys are properly converted to the expected format before calling this function.
    * The conversion from `bigint` to `Uint8Array` is currently a TODO and should be implemented correctly.
    */
-  static getMasterPublicKey (
+  static getMasterPublicKey(
     spendingPublicKey: [bigint, bigint], // | [Uint8Array, Uint8Array],
     nullifyingKey: bigint // | Uint8Array
   ): Uint8Array {
     // convert these from uint8Arrays here, they should be
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
     const output = poseidonFunc([...spendingPublicKey, nullifyingKey]) as Uint8Array
-    // const output = poseidonLib.poseidon3([...spendingPublicKey, nullifyingKey]);
-    // const outputBuffer = bigintToUint8Array(output);
     return output
   }
 
@@ -133,7 +131,7 @@ export class WalletNode {
    * @returns An object containing the private key and the public viewing key.
    * @todo Refactor to use a separate node chain key for enhanced security.
    */
-  getViewingKeyPair (): ViewingKeyPair {
+  getViewingKeyPair(): ViewingKeyPair {
     // TODO: THIS should be a separate node chainkey
     const privateKey = this.chainKey
     const pubkey = getPublicViewingKey(privateKey)
@@ -151,7 +149,7 @@ export class WalletNode {
    * - The conversion and hashing process may need refinement to ensure proper
    *   handling of data types (e.g., uint8 array vs bigint).
    */
-  getNullifyingKey (): bigint {
+  getNullifyingKey(): bigint {
     // TODO: store these securely instead of calculating every time?
     const { privateKey } = this.getViewingKeyPair()
 
