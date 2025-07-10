@@ -1,4 +1,4 @@
-import { poseidonFunc, uint8ArrayToBigInt } from '@railgun-reloaded/cryptography'
+import { poseidon } from '@railgun-reloaded/cryptography'
 
 import { getPublicSpendingKey, getPublicViewingKey } from '../keys'
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../seed/bip32'
@@ -119,7 +119,7 @@ class WalletNode {
   ): Uint8Array {
     // convert these from uint8Arrays here, they should be
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
-    const output = poseidonFunc([...spendingPublicKey, nullifyingKey].map(uint8ArrayToBigInt)) as Uint8Array
+    const output = poseidon([...spendingPublicKey, nullifyingKey]) as Uint8Array
     return output
   }
 
@@ -153,10 +153,9 @@ class WalletNode {
     // TODO: store these securely instead of calculating every time?
     const { privateKey } = this.getViewingKeyPair()
 
-    const uint8Array = [uint8ArrayToBigInt(privateKey)]
+    // const uint8Array = [uint8ArrayToBigInt(privateKey)]
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
-    // @ts-expect-error
-    return poseidonFunc(uint8Array)
+    return poseidon([privateKey])
   }
 }
 
