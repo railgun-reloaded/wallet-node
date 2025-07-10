@@ -1,1 +1,1 @@
-module.exports = require("@railgun-reloaded/eslint-config")();
+module.exports = require('@railgun-reloaded/eslint-config')()
