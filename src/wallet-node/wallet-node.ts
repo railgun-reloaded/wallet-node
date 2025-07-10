@@ -6,7 +6,7 @@ import { Mnemonic } from '../seed/bip39'
 import type { KeyNode, SpendingKeyPair, ViewingKeyPair } from '../types'
 
 const HARDENED_OFFSET = 0x80000000
-
+type WalletNodes = { spending: WalletNode; viewing: WalletNode }
 /**
  * The `WalletNode` class provides functionality for hierarchical deterministic wallet management,
  * including key derivation, cryptographic operations, and key pair generation. It encapsulates
@@ -35,7 +35,7 @@ const HARDENED_OFFSET = 0x80000000
  * - Optimize key storage to avoid recalculating keys repeatedly.
  * - Implement missing TODOs for robust functionality.
  */
-export class WalletNode {
+class WalletNode {
   /**
    * Represents the chain key used for cryptographic operations.
    * This is a private property containing a byte array (Uint8Array)
@@ -114,12 +114,12 @@ export class WalletNode {
    * The conversion from `bigint` to `Uint8Array` is currently a TODO and should be implemented correctly.
    */
   static getMasterPublicKey(
-    spendingPublicKey: [bigint, bigint], // | [Uint8Array, Uint8Array],
-    nullifyingKey: bigint // | Uint8Array
+    spendingPublicKey: [Uint8Array, Uint8Array],
+    nullifyingKey: Uint8Array
   ): Uint8Array {
     // convert these from uint8Arrays here, they should be
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
-    const output = poseidonFunc([...spendingPublicKey, nullifyingKey]) as Uint8Array
+    const output = poseidonFunc([...spendingPublicKey, nullifyingKey].map(uint8ArrayToBigInt)) as Uint8Array
     return output
   }
 
@@ -149,12 +149,16 @@ export class WalletNode {
    * - The conversion and hashing process may need refinement to ensure proper
    *   handling of data types (e.g., uint8 array vs bigint).
    */
-  getNullifyingKey(): bigint {
+  getNullifyingKey(): Uint8Array {
     // TODO: store these securely instead of calculating every time?
     const { privateKey } = this.getViewingKeyPair()
 
     const uint8Array = [uint8ArrayToBigInt(privateKey)]
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
-    return poseidonFunc(uint8Array, true) as bigint
+    // @ts-expect-error
+    return poseidonFunc(uint8Array)
   }
 }
+
+export { WalletNode }
+export type { WalletNodes }

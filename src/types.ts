@@ -2,7 +2,7 @@ type KeyNode = {
   chainKey: Uint8Array;
   chainCode: Uint8Array;
 }
-type SpendingPublicKey = [bigint, bigint]
+type SpendingPublicKey = [Uint8Array, Uint8Array]
 type SpendingKeyPair = {
   privateKey: Uint8Array;
   pubkey: SpendingPublicKey;

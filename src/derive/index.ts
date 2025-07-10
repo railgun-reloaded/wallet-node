@@ -1,3 +1,6 @@
+import type { WalletNodes } from '../wallet-node/wallet-node'
+import { WalletNode } from '../wallet-node/wallet-node'
+
 /**
  * A collection of derivation path prefixes used for generating hierarchical deterministic (HD) wallet keys.
  * These prefixes are used to define specific purposes for the derived keys.
@@ -37,4 +40,20 @@ const derivePathsForIndex = (index: number = 0) => {
   }
 }
 
-export { derivePathsForIndex, DERIVATION_PATH_PREFIXES }
+/**
+ *
+ * @param mnemonic
+ * @param index
+ */
+const deriveNodes = (
+  mnemonic: string,
+  index: number = 0
+): WalletNodes => {
+  const paths = derivePathsForIndex(index)
+  return {
+    spending: WalletNode.fromMnemonic(mnemonic).derive(paths.spending),
+    viewing: WalletNode.fromMnemonic(mnemonic).derive(paths.viewing),
+  }
+}
+
+export { derivePathsForIndex, deriveNodes, DERIVATION_PATH_PREFIXES }

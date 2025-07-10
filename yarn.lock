@@ -547,6 +547,12 @@
   resolved "https://registry.yarnpkg.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
+"@railgun-reloaded/0zk-addresses@https://github.com/railgun-reloaded/0zk-addresses":
+  version "1.0.0"
+  resolved "https://github.com/railgun-reloaded/0zk-addresses#c047baec5b1db7728f45a3751d834126cae4f80e"
+  dependencies:
+    "@scure/base" "^1.2.4"
+
 "@railgun-reloaded/cryptography@https://github.com/railgun-reloaded/cryptography#dev/eddsa":
   version "0.0.1"
   resolved "https://github.com/railgun-reloaded/cryptography#1a9094b8917af82eae020d52e5024716e3c45787"
@@ -570,7 +576,7 @@
   dependencies:
     "@tsconfig/strictest" "^2.0.5"
 
-"@scure/base@~1.2.5":
+"@scure/base@^1.2.4", "@scure/base@~1.2.5":
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.2.6.tgz#ca917184b8231394dd8847509c67a0be522e59f6"
   integrity sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg==

@@ -4,7 +4,7 @@ import * as ed25519 from '@noble/ed25519'
 import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
-import { eddsaBuild, initCircomlib, initializeEddsa, poseidonBuild, poseidonFunc } from '@railgun-reloaded/cryptography'
+import { eddsa, eddsaBuild, initCircomlib, initializeEddsa, poseidonBuild, poseidonFunc } from '@railgun-reloaded/cryptography'
 
 import {
   bigintToUint8Array,
@@ -38,9 +38,10 @@ ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
  * @returns A promise that resolves when the cryptography libraries are successfully initialized.
  */
 const initializeCryptographyLibs = async () => {
-  initCircomlib('pure')
-  initializeEddsa(poseidonBuild.pure)
-  if (typeof eddsaBuild === 'undefined') { throw new Error('EDDSA failed to initialize.') }
+  await initCircomlib('pure')
+  await initCircomlib('wasm')
+  await initializeEddsa(poseidonBuild.pure)
+  if (typeof eddsa === 'undefined') { throw new Error('EDDSA failed to initialize.') }
 }
 
 /**
@@ -49,10 +50,14 @@ const initializeCryptographyLibs = async () => {
  * @returns A tuple containing two bigints representing the public key coordinates.
  * @throws Error if the provided private key does not have a length of 32 bytes.
  */
-const getPublicSpendingKey = (privateKey: Uint8Array): [bigint, bigint] => {
+const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] => {
   // convert this from
   if (privateKey.length !== 32) throw Error('Invalid private key length')
-  return eddsaBuild.prv2pub(Buffer.from(privateKey))
+  return eddsaBuild
+    .prv2pub(privateKey)
+    .map((element: any) =>
+      eddsaBuild.F.fromMontgomery(element).reverse()
+    ) as [Uint8Array, Uint8Array]
 }
 
 /**
