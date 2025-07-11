@@ -1,3 +1,7 @@
+// TODO: lintfix
+// eslint-disable-next-line camelcase
+import { keccak_256 } from '@noble/hashes/sha3'
+import { bytesToHex, pointConversion } from '@railgun-reloaded/cryptography'
 import { HDKey } from '@scure/bip32'
 import {
   entropyToMnemonic,
@@ -108,10 +112,50 @@ export class Mnemonic {
     mnemonic: string,
     derivationIndex?: number
   ): Uint8Array {
+    const node = Mnemonic.to0xSigner(mnemonic, derivationIndex)
+    const privateKey = node.privateKey as Uint8Array
+    return privateKey
+  }
+
+  /**
+   * Converts a mnemonic phrase into a signer object using the specified derivation path.
+   * @param mnemonic - The mnemonic phrase used to generate the seed.
+   * @param derivationIndex - Optional index for deriving the path. If not provided, a default path is used.
+   * @returns An HDKey node derived from the seed and path.
+   */
+  static to0xSigner (
+    mnemonic: string,
+    derivationIndex?: number
+  ) {
     const seed = mnemonicToSeedSync(mnemonic)
     const path = getPath(derivationIndex)
     const node = HDKey.fromMasterSeed(seed).derive(path)
-    const privateKey = node.privateKey as Uint8Array
-    return privateKey
+    return node
+  }
+
+  /**
+   * Converts an HDKey instance to an Ethereum address in hexadecimal format (0x-prefixed).
+   * @param hdkey - The HDKey instance containing the public key to derive the address from.
+   * @returns The Ethereum address as a hexadecimal string (0x-prefixed).
+   * @throws {Error} If the HDKey instance is invalid or the public key is missing.
+   * @throws {Error} If the public key length is invalid (compressed public keys are not supported).
+   */
+  static hdkeyTo0xAddress (hdkey: HDKey): string {
+    // @ts-ignore TODO: typefix incorrect typescript error
+    const { pubKey } = hdkey
+    if (!pubKey) {
+      throw new Error('Invalid HDKey.')
+    }
+
+    // Ensure it's compressed (should be 33 bytes, starts with 0x04)
+    if (pubKey.length !== 33) {
+      throw new Error('Invalid public key length')
+    }
+    const point = pointConversion(bytesToHex(pubKey))
+    const uncompressed = point.toRawBytes(false) // 65 bytes
+
+    const hash = keccak_256(uncompressed.slice(1))
+    const address = hash.slice(-20)
+    return '0x' + Buffer.from(address).toString('hex')
   }
 }
