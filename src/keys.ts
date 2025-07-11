@@ -126,9 +126,9 @@ const adjustBytes25519 = (bytes: Uint8Array, endian: 'be' | 'le'): Uint8Array =>
  * @returns A Promise that resolves to a Uint8Array containing the derived scalar.
  * @throws An error if the provided private key is not exactly 32 bytes.
  */
-const getPrivateScalarFromPrivateKey = async (
+const getPrivateScalarFromPrivateKey = (
   privateKey: Uint8Array
-): Promise<Uint8Array> => {
+): Uint8Array => {
   // Private key should be 32 bytes
   if (privateKey.length !== 32) throw new Error('Expected 32 bytes')
 
@@ -157,13 +157,13 @@ const getPrivateScalarFromPrivateKey = async (
  * @param blindedPublicKeyPairB - The blinded public key pair of party B as a Uint8Array.
  * @returns A Promise that resolves to the generated symmetric key as a Uint8Array, or `undefined` if an error occurs.
  */
-const getSharedSymmetricKey = async (
+const getSharedSymmetricKey = (
   privateKeyPairA: Uint8Array,
   blindedPublicKeyPairB: Uint8Array
-): Promise<Uint8Array | undefined> => {
+): Uint8Array | undefined => {
   try {
     // Retrieve private scalar from private key
-    const scalar: Uint8Array = await getPrivateScalarFromPrivateKey(
+    const scalar: Uint8Array = getPrivateScalarFromPrivateKey(
       privateKeyPairA
     )
 
