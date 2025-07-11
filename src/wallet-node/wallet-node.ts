@@ -43,7 +43,7 @@ class WalletNode {
    * The chain code is a 32-byte value that, together with the private key,
    * is used to derive child keys in the wallet's key hierarchy.
    */
-  private chainCode: Uint8Array
+  private chainCode: Uint8Array // only used with mnemonic derivation, not used afterwards
 
   /**
    * Constructs a new instance of the WalletNode class.
