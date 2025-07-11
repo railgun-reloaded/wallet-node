@@ -3,6 +3,7 @@ import { AES, keccak256, rawSignature } from '@railgun-reloaded/cryptography'
 import { bigIntToArray } from '../hash.js'
 import { deriveNodes } from '../index.js'
 import { getSharedSymmetricKey } from '../keys.js'
+import { Mnemonic } from '../seed/bip39.js'
 import type {
   SpendingKeyPair,
   SpendingPublicKey,
@@ -17,7 +18,7 @@ type RailgunKeystore = {
   viewingKeyPair: ViewingKeyPair;
   nullifyingKey: Uint8Array;
   masterPublicKey: Uint8Array<ArrayBufferLike>;
-  zer0xPrivateKey: Uint8Array;
+  zer0xPrivateKey?: Uint8Array;
   shieldPrivateKey?: Uint8Array;
 }
 
@@ -67,7 +68,10 @@ export class RailgunWallet {
    */
   constructor (mnemonic: string, index: number = 0) {
     this.nodes = deriveNodes(mnemonic, index)
-    // @ts-ignore
+    // @ts-ignore - TODO: typefix
+    this.keystore = {}
+    this.keystore!.zer0xPrivateKey = Mnemonic.to0xPrivateKey(mnemonic, index)
+    // @ts-ignore - TODO: typefix
     this.initializeKeyPairs()
   }
 
@@ -126,11 +130,11 @@ export class RailgunWallet {
     )
 
     this.keystore = {
+      ...this.keystore,
       spendingKeyPair,
       viewingKeyPair,
       nullifyingKey,
       masterPublicKey,
-      zer0xPrivateKey: new Uint8Array(32), // TODO: calculate 0x private keys.
     }
     console.log(this.keystore)
   }
@@ -213,17 +217,13 @@ export class RailgunWallet {
    *   - The first element represents the IV and authentication tag.
    *   - The second element contains the encrypted data.
    *   - The third element is unused in this function.
-   * @param shieldKey - A Uint8Array representing the shared key used for decryption.
    * @returns The decrypted data as a Uint8Array.
    * @throws Will throw an error if decryption fails or the input data is invalid.
    */
   decryptRandom (
-    encryptedBundle: [Uint8Array, Uint8Array, Uint8Array],
-    shieldKey: Uint8Array
+    encryptedBundle: [Uint8Array, Uint8Array, Uint8Array]
   ): Uint8Array {
-    // rawsign
-
-    const sharedKey = getSharedSymmetricKey(this.getViewingPublicKey(), shieldKey)
+    const sharedKey = getSharedSymmetricKey(this.getViewingPublicKey(), this.keystore?.shieldPrivateKey!)
     if (!sharedKey) {
       throw new Error('No shared key.')
     }
