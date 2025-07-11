@@ -1,4 +1,4 @@
-import { AES, poseidon } from '@railgun-reloaded/cryptography'
+import { poseidon } from '@railgun-reloaded/cryptography'
 
 import { getPublicSpendingKey, getPublicViewingKey } from '../keys'
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../seed/bip32'
@@ -151,33 +151,6 @@ class WalletNode {
     // const uint8Array = [uint8ArrayToBigInt(privateKey)]
     // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
     return poseidon([privateKey])
-  }
-
-  /**
-   * Decrypts a randomly encrypted bundle using AES-GCM.
-   * @param encryptedBundle - An array containing three Uint8Array elements:
-   *   - The first element represents the IV and authentication tag.
-   *   - The second element contains the encrypted data.
-   *   - The third element is unused in this function.
-   * @param sharedKey - A Uint8Array representing the shared key used for decryption.
-   * @returns The decrypted data as a Uint8Array.
-   * @throws Will throw an error if decryption fails or the input data is invalid.
-   */
-  decryptRandom (
-    encryptedBundle: [Uint8Array, Uint8Array, Uint8Array],
-    sharedKey: Uint8Array
-  ): Uint8Array {
-    const hexlified0 = encryptedBundle[0]
-    const hexlified1 = encryptedBundle[1]
-    const decrypted = AES.decryptGCM(
-      {
-        iv: hexlified0.slice(0, 16),
-        tag: hexlified0.slice(16, 32),
-        data: [hexlified1.slice(0, 16)],
-      },
-      sharedKey
-    )[0]!
-    return decrypted
   }
 }
 
