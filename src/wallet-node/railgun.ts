@@ -1,5 +1,6 @@
-import { AES } from '@railgun-reloaded/cryptography'
+import { AES, keccak256, rawSignature } from '@railgun-reloaded/cryptography'
 
+import { bigIntToArray } from '../hash.js'
 import { deriveNodes } from '../index.js'
 import { getSharedSymmetricKey } from '../keys.js'
 import type {
@@ -16,6 +17,8 @@ type RailgunKeystore = {
   viewingKeyPair: ViewingKeyPair;
   nullifyingKey: Uint8Array;
   masterPublicKey: Uint8Array<ArrayBufferLike>;
+  zer0xPrivateKey: Uint8Array;
+  shieldPrivateKey?: Uint8Array;
 }
 
 /**
@@ -64,6 +67,7 @@ export class RailgunWallet {
    */
   constructor (mnemonic: string, index: number = 0) {
     this.nodes = deriveNodes(mnemonic, index)
+    // @ts-ignore
     this.initializeKeyPairs()
   }
 
@@ -78,6 +82,30 @@ export class RailgunWallet {
   }
 
   /**
+   * Sets the shield private key in the keystore by generating it from a raw signature.
+   * This method requires the keystore to be initialized. It computes the shield private key
+   * using the `rawSignature` function and the `keccak256` hash of the concatenated signature components.
+   * @throws {Error} If the keystore is not initialized.
+   * @returns The computed shield private key.
+   */
+  async setShieldPrivateKey () {
+    if (!this.keystore) {
+      throw new Error('Keystore not initialized')
+    }
+    const shieldSignature = await rawSignature(RailgunWallet.getShieldPrivateKeySignatureMessage(), this.keystore.zer0xPrivateKey)
+    const rBytes = bigIntToArray(shieldSignature.r)
+    const sBytes = bigIntToArray(shieldSignature.s)
+    const vByte = Uint8Array.of(27 + shieldSignature.recovery)
+    const privKeyBytes = new Uint8Array(65)
+    privKeyBytes.set(rBytes, 0)
+    privKeyBytes.set(sBytes, 32)
+    privKeyBytes.set(vByte, 64)
+    const shieldPrivateKey = keccak256(privKeyBytes)
+    this.keystore.shieldPrivateKey = shieldPrivateKey
+    return shieldPrivateKey
+  }
+
+  /**
    * Initializes the key pairs and related cryptographic keys for the wallet node.
    * This method retrieves the spending key pair, nullifying key, and viewing key pair
    * from the respective nodes, and computes the master public key using the spending
@@ -88,7 +116,7 @@ export class RailgunWallet {
    * - The `viewingKeyPair` is used for viewing encrypted data.
    * - The `masterPublicKey` is derived from the spending public key and nullifying key.
    */
-  initializeKeyPairs (): void {
+  async initializeKeyPairs (): Promise<void> {
     const spendingKeyPair = this.nodes.spending.getSpendingKeyPair()
     const nullifyingKey = this.nodes.viewing.getNullifyingKey()
     const viewingKeyPair = this.nodes.viewing.getViewingKeyPair()
@@ -102,7 +130,9 @@ export class RailgunWallet {
       viewingKeyPair,
       nullifyingKey,
       masterPublicKey,
+      zer0xPrivateKey: new Uint8Array(32), // TODO: calculate 0x private keys.
     }
+    console.log(this.keystore)
   }
 
   /**
@@ -191,6 +221,8 @@ export class RailgunWallet {
     encryptedBundle: [Uint8Array, Uint8Array, Uint8Array],
     shieldKey: Uint8Array
   ): Uint8Array {
+    // rawsign
+
     const sharedKey = getSharedSymmetricKey(this.getViewingPublicKey(), shieldKey)
     if (!sharedKey) {
       throw new Error('No shared key.')
