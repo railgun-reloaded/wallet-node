@@ -75,7 +75,7 @@ export class RailgunWallet {
    * @param mnemonic - The mnemonic phrase used to derive nodes.
    * @param index - The index of the node to derive (default is 0).
    */
-  constructor (mnemonic: string, index: number = 0) {
+  constructor(mnemonic: string, index: number = 0) {
     this.nodes = deriveNodes(mnemonic, index)
     // @ts-ignore - TODO: typefix
     this.keystore = {}
@@ -96,7 +96,7 @@ export class RailgunWallet {
    * This message is a predefined string that should not be modified.
    * @returns The constant signature message 'RAILGUN_SHIELD'.
    */
-  static getShieldPrivateKeySignatureMessage () {
+  static getShieldPrivateKeySignatureMessage() {
     // DO NOT MODIFY THIS CONSTANT.
     return 'RAILGUN_SHIELD'
   }
@@ -112,7 +112,7 @@ export class RailgunWallet {
    * - The `viewingKeyPair` is used for viewing encrypted data.
    * - The `masterPublicKey` is derived from the spending public key and nullifying key.
    */
-  async initializeKeyPairs (): Promise<void> {
+  async initializeKeyPairs(): Promise<void> {
     const spendingKeyPair = this.nodes.spending.getSpendingKeyPair()
     const nullifyingKey = this.nodes.viewing.getNullifyingKey()
     const viewingKeyPair = this.nodes.viewing.getViewingKeyPair()
@@ -132,7 +132,7 @@ export class RailgunWallet {
    * @returns The spending private key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getSpendingPrivateKey (): Uint8Array<ArrayBufferLike> {
+  getSpendingPrivateKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -144,7 +144,7 @@ export class RailgunWallet {
    * @returns The spending public key associated with the keystore.
    * @throws {Error} If the keystore is not initialized.
    */
-  getSpendingPublicKey (): SpendingPublicKey {
+  getSpendingPublicKey(): SpendingPublicKey {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -156,7 +156,7 @@ export class RailgunWallet {
    * @returns The master public key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getMasterPublicKey (): Uint8Array<ArrayBufferLike> {
+  getMasterPublicKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -168,7 +168,7 @@ export class RailgunWallet {
    * @returns The nullifying key.
    * @throws {Error} If the keystore is not initialized.
    */
-  getNullifyingKey (): Uint8Array {
+  getNullifyingKey(): Uint8Array {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -180,7 +180,7 @@ export class RailgunWallet {
    * @returns The viewing public key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getViewingPublicKey (): Uint8Array<ArrayBufferLike> {
+  getViewingPublicKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -192,7 +192,7 @@ export class RailgunWallet {
    * @returns The viewing private key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getViewingPrivateKey (): Uint8Array<ArrayBufferLike> {
+  getViewingPrivateKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -208,7 +208,7 @@ export class RailgunWallet {
    * @returns The decrypted data as a Uint8Array.
    * @throws Will throw an error if decryption fails or the input data is invalid.
    */
-  decryptRandom (
+  decryptRandom(
     encryptedBundle: [Uint8Array, Uint8Array, Uint8Array]
   ): Uint8Array {
     // TODO: decide on moving this to crypto module?
