@@ -1,80 +1,79 @@
 /**
- * @enum {number} TokenType
- * Enumeration of supported token types in RAILGUN.
+ * TokenType
+ * Enumeration of supported token types in the Railgun system.
  */
-export enum TokenType {
+enum TokenType {
   ERC20 = 0,
   ERC721 = 1,
   ERC1155 = 2,
 }
 
 /**
- * @enum {number} OutputType
+ * OutputType
  * Enumeration of output types in transactions.
  */
-export enum OutputType {
+enum OutputType {
   Transfer = 0,
   BroadcasterFee = 1,
   Change = 2,
 }
 
 /**
- * @typedef {object} TokenData
+ *
  * Represents data for a token, including its type, address, and sub-ID.
  */
-export type TokenData = {
+type TokenData = {
   tokenType: TokenType;
   tokenAddress: string;
   tokenSubID: string;
-};
+}
 
 /**
- * @enum {number} ChainType
+ * ChainType
  * Enumeration of supported blockchain chain types.
  */
-export enum ChainType {
+enum ChainType {
   EVM = 0,
 }
 
 /**
- * @typedef {object} Chain
+ *
  * Represents a blockchain chain with its type and ID.
  */
-export type Chain = {
+type Chain = {
   type: ChainType;
   id: number;
-};
+}
 
 /**
- * @typedef {object} AddressData
+ *
  * Contains address-related data including public keys and optional chain/version info.
  */
-export type AddressData = {
+type AddressData = {
   masterPublicKey: bigint;
   viewingPublicKey: Uint8Array;
   chain?: Chain;
   version?: number;
-};
+}
 
 /**
- * @typedef {object} NoteCiphertext
+ *
  * Represents the ciphertext data for a note, including IV, tag, and encrypted data.
  */
-export type NoteCiphertext = {
+type NoteCiphertext = {
   iv: string;
   tag: string;
   data: string[];
-};
+}
 
 /**
- * @interface NoteBase
  * Base interface for all note types, containing common properties.
- * @property {string} notePublicKey - Also known as npk
- * @property {string} random - 16 byte random
- * @property {bigint} value - The value of the note
- * @property {TokenData} tokenData - Token data
+ * notePublicKey - Also known as npk
+ * random - 16 byte random
+ * value - The value of the note
+ * tokenData - Token data
  */
-export interface NoteBase {
+interface NoteBase {
   notePublicKey: string;
   random: string;
   value: bigint;
@@ -82,29 +81,22 @@ export interface NoteBase {
 }
 
 /**
- * @interface ShieldNote
  * Interface for shield notes, extending NoteBase with additional properties for shielding.
  */
-export interface ShieldNote extends NoteBase {
+interface ShieldNote extends NoteBase {
   masterPublicKey: bigint;
   tokenHash: string;
 }
 
 /**
- * @interface TransactNote
  * Interface for transaction notes, extending NoteBase with sender/receiver data and transaction details.
- * @property {AddressData} receiverAddressData - address data of recipient
- * @property {AddressData | undefined} senderAddressData - address data of sender
- * @property {string} tokenHash - 32 byte hash of token data
- * @property {bigint} hash - Note hash
- * @property {OutputType | undefined} outputType
- * @property {string | undefined} walletSource
- * @property {string | undefined} senderRandom
- * @property {string | undefined} memoText
- * @property {string | undefined} shieldFee - Only used during serialization/storage of ShieldCommitments.
- * @property {number | undefined} blockNumber
+ * receiverAddressData - address data of recipient
+ * senderAddressData - address data of sender
+ * tokenHash - 32 byte hash of token data
+ * hash - Note hash
+ * shieldFee - Only used during serialization/storage of ShieldCommitments.
  */
-export interface TransactNote extends NoteBase {
+interface TransactNote extends NoteBase {
   receiverAddressData: AddressData;
   senderAddressData: AddressData | undefined;
   tokenHash: string;
@@ -118,11 +110,13 @@ export interface TransactNote extends NoteBase {
 }
 
 /**
- * @interface UnshieldNote
  * Interface for unshield notes, extending NoteBase with unshielding-specific properties.
  */
-export interface UnshieldNote extends NoteBase {
+interface UnshieldNote extends NoteBase {
   toAddress: string;
   hash: bigint;
   allowOverride: boolean;
 }
+
+export type { TokenData, Chain, AddressData, NoteCiphertext, NoteBase, ShieldNote, TransactNote, UnshieldNote }
+export { TokenType, OutputType, ChainType }
