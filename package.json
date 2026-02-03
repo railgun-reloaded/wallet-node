@@ -9,8 +9,7 @@
     "lint:fix": "eslint --fix",
     "pretest": "npm run build",
     "test": "npx mocha ./test/**/*.test.js",
-    "prepack": "npm run build",
-    "postinstall": "./postinstall.sh"
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",
