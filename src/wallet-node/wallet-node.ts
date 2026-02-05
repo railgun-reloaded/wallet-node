@@ -25,11 +25,6 @@ type WalletNodes = { spending: WalletNode; viewing: WalletNode }
  * This class is designed for use in cryptographic wallet implementations, enabling secure
  * key management and hierarchical deterministic wallet functionality.
  *
- * ### Dependencies:
- * - `poseidonFunc`: A cryptographic hash function used for key computations.
- * - `uint8ArrayToBigInt`: Utility for converting Uint8Array to bigint.
- * - External functions for mnemonic seed generation, key derivation, and public key computation.
- *
  * ### Notes:
  * - Ensure proper handling of Uint8Array and bigint conversions in cryptographic operations.
  * - Optimize key storage to avoid recalculating keys repeatedly.

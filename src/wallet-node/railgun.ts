@@ -1,4 +1,10 @@
+import { AES } from '@railgun-reloaded/cryptography'
+import type { HDKey } from '@scure/bip32'
+
+import { encodeBytes } from '../hash.js'
 import { deriveNodes } from '../index.js'
+import { getSharedSymmetricKey } from '../keys.js'
+import { Mnemonic } from '../seed/bip39.js'
 import type {
   SpendingKeyPair,
   SpendingPublicKey,
@@ -9,10 +15,13 @@ import type { WalletNodes } from './wallet-node.js'
 import { WalletNode } from './wallet-node.js'
 
 type RailgunKeystore = {
+  zer0xPublicSigner: HDKey;
   spendingKeyPair: SpendingKeyPair;
   viewingKeyPair: ViewingKeyPair;
   nullifyingKey: Uint8Array;
   masterPublicKey: Uint8Array<ArrayBufferLike>;
+  zer0xPrivateKey: Uint8Array;
+  shieldPrivateKey: Uint8Array;
 }
 
 /**
@@ -52,15 +61,33 @@ export class RailgunWallet {
    * The keystore instance used for managing cryptographic keys and secure storage.
    * This property is optional and may be undefined if the keystore is not initialized.
    */
-  private keystore: RailgunKeystore | undefined
+  // @ts-ignore TODO: typefix
+  private keystore: RailgunKeystore = {}
+
+  /**
+   * Indicates whether the wallet-node has been initialized.
+   * This flag is set to `true` once the initialization process is complete.
+   */
+  public initialized: boolean = false
 
   /**
    * Constructs an instance of the Railgun class.
    * @param mnemonic - The mnemonic phrase used to derive nodes.
    * @param index - The index of the node to derive (default is 0).
    */
-  constructor (mnemonic: string, index: number = 0) {
+  constructor(mnemonic: string, index: number = 0) {
     this.nodes = deriveNodes(mnemonic, index)
+    // @ts-ignore - TODO: typefix
+    this.keystore = {}
+    this.keystore.zer0xPublicSigner = Mnemonic.to0xSigner(mnemonic, index)
+    // @ts-ignore - incorrect typescript error?
+    this.keystore.zer0xPrivateKey = this.keystore.zer0xPublicSigner.privKeyBytes as Uint8Array
+    const signatureBytes = encodeBytes(RailgunWallet.getShieldPrivateKeySignatureMessage())
+    const bytesFixed = new Uint8Array(32)
+    bytesFixed.set(signatureBytes, 32 - signatureBytes.length)
+    this.keystore.shieldPrivateKey = this.keystore.zer0xPublicSigner.sign(bytesFixed)
+    // const publicAddress = Mnemonic.hdkeyTo0xAddress(this.keystore.zer0xPublicSigner)
+    // @ts-ignore - TODO: typefix
     this.initializeKeyPairs()
   }
 
@@ -69,7 +96,7 @@ export class RailgunWallet {
    * This message is a predefined string that should not be modified.
    * @returns The constant signature message 'RAILGUN_SHIELD'.
    */
-  static getShieldPrivateKeySignatureMessage () {
+  static getShieldPrivateKeySignatureMessage() {
     // DO NOT MODIFY THIS CONSTANT.
     return 'RAILGUN_SHIELD'
   }
@@ -85,7 +112,7 @@ export class RailgunWallet {
    * - The `viewingKeyPair` is used for viewing encrypted data.
    * - The `masterPublicKey` is derived from the spending public key and nullifying key.
    */
-  initializeKeyPairs (): void {
+  async initializeKeyPairs(): Promise<void> {
     const spendingKeyPair = this.nodes.spending.getSpendingKeyPair()
     const nullifyingKey = this.nodes.viewing.getNullifyingKey()
     const viewingKeyPair = this.nodes.viewing.getViewingKeyPair()
@@ -94,12 +121,10 @@ export class RailgunWallet {
       nullifyingKey
     )
 
-    this.keystore = {
-      spendingKeyPair,
-      viewingKeyPair,
-      nullifyingKey,
-      masterPublicKey,
-    }
+    this.keystore.spendingKeyPair = spendingKeyPair
+    this.keystore.viewingKeyPair = viewingKeyPair
+    this.keystore.nullifyingKey = nullifyingKey
+    this.keystore.masterPublicKey = masterPublicKey
   }
 
   /**
@@ -107,7 +132,7 @@ export class RailgunWallet {
    * @returns The spending private key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getSpendingPrivateKey (): Uint8Array<ArrayBufferLike> {
+  getSpendingPrivateKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -119,7 +144,7 @@ export class RailgunWallet {
    * @returns The spending public key associated with the keystore.
    * @throws {Error} If the keystore is not initialized.
    */
-  getSpendingPublicKey (): SpendingPublicKey {
+  getSpendingPublicKey(): SpendingPublicKey {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -131,7 +156,7 @@ export class RailgunWallet {
    * @returns The master public key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getMasterPublicKey (): Uint8Array<ArrayBufferLike> {
+  getMasterPublicKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -143,7 +168,7 @@ export class RailgunWallet {
    * @returns The nullifying key.
    * @throws {Error} If the keystore is not initialized.
    */
-  getNullifyingKey (): Uint8Array {
+  getNullifyingKey(): Uint8Array {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -155,7 +180,7 @@ export class RailgunWallet {
    * @returns The viewing public key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getViewingPublicKey (): Uint8Array<ArrayBufferLike> {
+  getViewingPublicKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
@@ -167,10 +192,40 @@ export class RailgunWallet {
    * @returns The viewing private key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
-  getViewingPrivateKey (): Uint8Array<ArrayBufferLike> {
+  getViewingPrivateKey(): Uint8Array<ArrayBufferLike> {
     if (!this.keystore) {
       throw new Error('Keystore not initialized')
     }
     return this.keystore.viewingKeyPair.privateKey
+  }
+
+  /**
+   * Decrypts a note encrypted bundle using AES-GCM.
+   * @param encryptedBundle - An array containing three Uint8Array elements:
+   *   - The first element represents the IV and authentication tag.
+   *   - The second element contains the encrypted data.
+   *   - The third element is unused in this function.
+   * @returns The decrypted data as a Uint8Array.
+   * @throws Will throw an error if decryption fails or the input data is invalid.
+   */
+  decryptRandom(
+    encryptedBundle: [Uint8Array, Uint8Array, Uint8Array]
+  ): Uint8Array {
+    // TODO: decide on moving this to crypto module?
+    const sharedKey = getSharedSymmetricKey(this.getViewingPublicKey(), this.keystore?.shieldPrivateKey!)
+    if (!sharedKey) {
+      throw new Error('No shared key.')
+    }
+    const hexlified0 = encryptedBundle[0]
+    const hexlified1 = encryptedBundle[1]
+    const decrypted = AES.decryptGCM(
+      {
+        iv: hexlified0.slice(0, 16),
+        tag: hexlified0.slice(16, 32),
+        data: [hexlified1.slice(0, 16)],
+      },
+      sharedKey
+    )[0]!
+    return decrypted
   }
 }
