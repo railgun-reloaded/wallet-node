@@ -7,6 +7,7 @@ import type { KeyNode, SpendingKeyPair, ViewingKeyPair } from '../types'
 
 const HARDENED_OFFSET = 0x80000000
 type WalletNodes = { spending: WalletNode; viewing: WalletNode }
+
 /**
  * The `WalletNode` class provides functionality for hierarchical deterministic wallet management,
  * including key derivation, cryptographic operations, and key pair generation. It encapsulates
@@ -52,7 +53,7 @@ class WalletNode {
 
   /**
    * Constructs a new instance of the WalletNode class.
-   * @param keyNode - An instance of the KeyNode class containing the chain key and chain code
+   * @param keyNode - A KeyNode object containing the chainKey and chainCode
    *                  used to initialize the WalletNode.
    */
   constructor (keyNode: KeyNode) {
@@ -71,9 +72,10 @@ class WalletNode {
   }
 
   /**
-   * Derives new BIP32Node along path
-   * @param path - path to derive along
-   * @returns - new BIP32 implementation Node
+   * Derives a new WalletNode along the specified BIP32 derivation path.
+   * @param path - The derivation path to follow (e.g., "m/44'/0'/0'")
+   * @returns A new WalletNode instance derived from the path
+   * @throws {Error} If the derivation path is invalid
    */
   derive (path: string): WalletNode {
     // Get path segments
@@ -92,8 +94,8 @@ class WalletNode {
   }
 
   /**
-   * Get spending key-pair
-   * @returns keypair
+   * Gets the spending key pair for this wallet node.
+   * @returns SpendingKeyPair object containing privateKey (Uint8Array) and pubkey (tuple of two Uint8Arrays)
    */
   getSpendingKeyPair (): SpendingKeyPair {
     const privateKey = this.chainKey
@@ -106,12 +108,10 @@ class WalletNode {
 
   /**
    * Generates the master public key using the provided spending public key and nullifying key.
-   * @param spendingPublicKey - A tuple containing two bigints representing the spending public key.
-   * @param nullifyingKey - A bigint representing the nullifying key.
+   * This function utilizes the Poseidon hash function to compute the master public key.
+   * @param spendingPublicKey - A tuple containing two Uint8Arrays representing the spending public key.
+   * @param nullifyingKey - A Uint8Array representing the nullifying key.
    * @returns A Uint8Array representing the computed master public key.
-   * This function utilizes the `poseidonFunc` to compute the master public key.
-   * Ensure that the input keys are properly converted to the expected format before calling this function.
-   * The conversion from `bigint` to `Uint8Array` is currently a TODO and should be implemented correctly.
    */
   static getMasterPublicKey (
     spendingPublicKey: [Uint8Array, Uint8Array],
@@ -128,8 +128,7 @@ class WalletNode {
    * The viewing key pair consists of a private key and a public viewing key.
    * The private key is derived from the node's chain key, and the public viewing key
    * is generated using the `getPublicViewingKey` function.
-   * @returns An object containing the private key and the public viewing key.
-   * @todo Refactor to use a separate node chain key for enhanced security.
+   * @returns ViewingKeyPair object containing privateKey and pubkey (both Uint8Arrays)
    */
   getViewingKeyPair (): ViewingKeyPair {
     // TODO: THIS should be a separate node chainkey
@@ -141,13 +140,8 @@ class WalletNode {
   /**
    * Generates the nullifying key for the wallet node.
    * This method calculates the nullifying key using the private key obtained
-   * from the viewing key pair. The calculation involves converting the private
-   * key into a bigint and applying the Poseidon hash function.
-   * @returns The calculated nullifying key.
-   * - The private key is currently recalculated every time this method is called.
-   *   Consider securely storing the private key to optimize performance.
-   * - The conversion and hashing process may need refinement to ensure proper
-   *   handling of data types (e.g., uint8 array vs bigint).
+   * from the viewing key pair and applies the Poseidon hash function.
+   * @returns The calculated nullifying key as a Uint8Array.
    */
   getNullifyingKey (): Uint8Array {
     // TODO: store these securely instead of calculating every time?
