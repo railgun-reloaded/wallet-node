@@ -24,10 +24,11 @@ const CURVE_L_BYTES = bigintToUint8Array(CURVE_L)
 // ed25519.getPublicKey(privKey);
 // ed25519.sign(msg, privKey);
 // ed25519.verify(signature, msg, pubKey);
+
 /**
- *1
- * @param m a
- * @returns a
+ * SHA-512 hash function synchronous implementation.
+ * @param m - Variable number of Uint8Array arguments to concatenate and hash
+ * @returns The SHA-512 hash (512-bit/64 bytes) of the concatenated input bytes
  */
 ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
 
@@ -47,8 +48,8 @@ const initializeCryptographyLibs = async () => {
 /**
  * Derives the public spending key from a given private key using the EdDSA algorithm.
  * @param privateKey - A 32-byte Uint8Array representing the private key.
- * @returns A tuple containing two bigints representing the public key coordinates.
- * @throws Error if the provided private key does not have a length of 32 bytes.
+ * @returns A tuple containing two Uint8Arrays representing the public key coordinates.
+ * @throws {Error} If the provided private key does not have a length of 32 bytes.
  */
 const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] => {
   // convert this from
@@ -58,8 +59,8 @@ const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] 
 
 /**
  * Derives the public viewing key from the given private viewing key.
- * @param privateViewingKey - A `Uint8Array` representing the private viewing key.
- * @returns A promise that resolves to a `Uint8Array` containing the derived public viewing key.
+ * @param privateViewingKey - A Uint8Array representing the private viewing key.
+ * @returns A Uint8Array containing the derived public viewing key.
  */
 const getPublicViewingKey = (
   privateViewingKey: Uint8Array
@@ -71,9 +72,10 @@ const getPublicViewingKey = (
  * Adjust bits to match the pattern xxxxx000...01xxxxxx for little endian and 01xxxxxx...xxxxx000 for big endian
  * This ensures that the bytes are a little endian representation of an integer of the form (2^254 + 8) * x where
  * 0 \< x \<= 2^251 - 1, which can be decoded as an X25519 integer.
- * @param bytes - bytes to adjust
- * @param endian - what endian to use
- * @returns adjusted bytes
+ * @param bytes - The Uint8Array bytes to adjust (must be 32 bytes)
+ * @param endian - The endian format to use ('be' for big endian, 'le' for little endian)
+ * @returns The adjusted bytes as a new Uint8Array
+ * @throws {Error} If bytes is not a Uint8Array of length 32
  */
 const adjustBytes25519 = (bytes: Uint8Array, endian: 'be' | 'le'): Uint8Array => {
   // Create new array to prevent side effects
@@ -124,7 +126,7 @@ const adjustBytes25519 = (bytes: Uint8Array, endian: 'be' | 'le'): Uint8Array =>
  * function returns a predefined constant `CURVE_L_BYTES`.
  * @param privateKey - A 32-byte Uint8Array representing the private key.
  * @returns A Promise that resolves to a Uint8Array containing the derived scalar.
- * @throws An error if the provided private key is not exactly 32 bytes.
+ * @throws {Error} If the provided private key is not exactly 32 bytes.
  */
 const getPrivateScalarFromPrivateKey = async (
   privateKey: Uint8Array
@@ -217,18 +219,18 @@ const scalarMultiplyJavascript = (
 /**
  * Generates a random scalar value using the Poseidon hash function.
  *
- * This function creates a random 32-byte value, converts it to a bigint,
- * and then hashes it using the Poseidon hash function to produce a scalar.
- * @returns A random scalar value derived from the Poseidon hash.
+ * This function creates a random 32-byte value and hashes it using the Poseidon hash function to produce a scalar.
+ * @returns A random scalar value (as Uint8Array) derived from the Poseidon hash.
  */
 const getRandomScalar = (): Uint8Array => {
   return poseidon([randomBytes(32)]) as Uint8Array
 }
 
 /**
- * Converts seed to curve scalar
- * @param seed - seed to convert
- * @returns scalar
+ * Converts seed to curve scalar.
+ * Hashes the seed to a 512-bit value and reduces it modulo the curve order.
+ * @param seed - The seed Uint8Array to convert
+ * @returns The scalar as a Uint8Array
  */
 const seedToScalar = (seed: Uint8Array): Uint8Array => {
   // Hash to 512 bit value as per FIPS-186
@@ -247,9 +249,9 @@ const seedToScalar = (seed: Uint8Array): Uint8Array => {
  * allowing the receiver to invert the blinding operation
  * Final random value is padded to 32 bytes
  * Get blinding scalar from random
- * @param sharedRandom - random value shared by both parties
- * @param senderRandom - random value only known to sender
- * @returns ephemeral keys
+ * @param sharedRandom - Random value shared by both parties (Uint8Array)
+ * @param senderRandom - Random value only known to sender (Uint8Array)
+ * @returns The blinding scalar as a bigint
  */
 const getBlindingScalar = (
   sharedRandom: Uint8Array,
@@ -265,11 +267,11 @@ const getBlindingScalar = (
 
 /**
  * Blinds sender and receiver public keys
- * @param senderViewingPublicKey - Sender's viewing public key
- * @param receiverViewingPublicKey - Receiver's viewing public key
- * @param sharedRandom - random value shared by both parties
- * @param senderRandom - random value only known to sender
- * @returns ephemeral keys
+ * @param senderViewingPublicKey - Sender's viewing public key (Uint8Array)
+ * @param receiverViewingPublicKey - Receiver's viewing public key (Uint8Array)
+ * @param sharedRandom - Random value shared by both parties (Uint8Array)
+ * @param senderRandom - Random value only known to sender (Uint8Array)
+ * @returns Object containing blindedSenderViewingKey and blindedReceiverViewingKey (both Uint8Array)
  */
 const getNoteBlindingKeys = (
   senderViewingPublicKey: Uint8Array,

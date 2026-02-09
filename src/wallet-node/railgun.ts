@@ -55,9 +55,9 @@ export class RailgunWallet {
   private keystore: RailgunKeystore | undefined
 
   /**
-   * Constructs an instance of the Railgun class.
-   * @param mnemonic - The mnemonic phrase used to derive nodes.
-   * @param index - The index of the node to derive (default is 0).
+   * Constructs an instance of the RailgunWallet class.
+   * @param mnemonic - The mnemonic phrase used to derive wallet nodes.
+   * @param index - The derivation index for the wallet nodes (default is 0).
    */
   constructor (mnemonic: string, index: number = 0) {
     this.nodes = deriveNodes(mnemonic, index)

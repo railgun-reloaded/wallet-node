@@ -4,18 +4,21 @@ import type { KeyNode } from '../types.js'
 const CURVE_SEED = encodeBytes('babyjubjub seed') // same calculation as current engine
 
 /**
- * Tests derivation path to see if it's valid
- * @param path - bath to test
- * @returns valid
+ * Tests derivation path to see if it's valid.
+ * Valid paths must start with 'm' and contain only hardened derivation segments (e.g., "m/44'/0'/0'").
+ * @param path - The derivation path string to test
+ * @returns True if the path is valid, false otherwise
  */
 function isValidPath (path: string): boolean {
   return /^m(\/[0-9]+')+$/g.test(path)
 }
 
 /**
- * Converts path string into segments
- * @param path - path string to parse
- * @returns array of indexes
+ * Converts path string into segments.
+ * Parses a BIP32 derivation path and extracts the numeric indices.
+ * @param path - The derivation path string to parse (e.g., "m/44'/0'/0'")
+ * @returns Array of numeric indices extracted from the path
+ * @throws {Error} If the derivation path is invalid
  */
 function getPathSegments (path: string): number[] {
   // Throw if path is invalid
@@ -76,9 +79,10 @@ function childKeyDerivationHardened (
 }
 
 /**
- * Creates KeyNode from seed
- * @param seed - bip32 seed
- * @returns BjjNode - babyjubjub BIP32Node
+ * Creates KeyNode from seed.
+ * Generates the master key node using HMAC-SHA512 with the babyjubjub seed.
+ * @param seed - The BIP32 seed (Uint8Array)
+ * @returns KeyNode containing chainKey and chainCode
  */
 function getMasterKeyFromSeed (seed: Uint8Array): KeyNode {
   // HMAC with seed to get I

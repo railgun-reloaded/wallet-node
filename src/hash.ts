@@ -65,8 +65,7 @@ const bigIntToArray = (value: bigint): Uint8Array => {
   // length = value.toString(2).length / 2
   const length = Math.ceil(value.toString(10).length / 2)
 
-  console.log('length', length)
-  const byteArray = new Uint8Array(length) // 256 bits = 32 bytes
+  const byteArray = new Uint8Array(length)
   for (let i = 0; i < byteArray.length; i++) {
     byteArray[i] = Number(value & 0xffn) // Extract last 8 bits
     value >>= 8n // Shift right by 8 bits
@@ -116,4 +115,34 @@ const xorBytesInPlace = (
   }
 }
 
-export { xorBytesInPlace, bigIntToArray, bigintToUint8Array, encodeBytes, uint8ArrayToBigInt, sha512HMAC, hexToArray }
+/**
+ * Converts a Uint8Array to a hexadecimal string representation.
+ * @param bytes - The Uint8Array to convert
+ * @param prefix - Whether to include '0x' prefix (default: true)
+ * @returns A hexadecimal string
+ */
+const uint8ArrayToHex = (bytes: Uint8Array, prefix: boolean = true): string => {
+  const hex = Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  return prefix ? '0x' + hex : hex
+}
+
+/**
+ * Converts a hex string to Uint8Array with proper validation.
+ * @param hex - The hex string to convert (with or without 0x prefix)
+ * @returns The converted Uint8Array
+ * @throws {Error} If hex string is invalid
+ */
+const hexToUint8Array = (hex: string): Uint8Array => {
+  const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex
+  if (cleanHex.length % 2 !== 0) {
+    throw new Error(`Hex string must have even length. Got: ${hex}`)
+  }
+  if (!/^[0-9a-fA-F]*$/.test(cleanHex)) {
+    throw new Error(`Invalid hex string: ${hex}`)
+  }
+  return hexToArray(cleanHex)
+}
+
+export { xorBytesInPlace, bigIntToArray, bigintToUint8Array, encodeBytes, uint8ArrayToBigInt, sha512HMAC, hexToArray, uint8ArrayToHex, hexToUint8Array }
