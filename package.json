@@ -8,7 +8,8 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "pretest": "npm run build",
-    "test": "npx mocha ./test/**/*.test.js",
+    "test": "npm run build && brittle ./test/**/*.test.js",
+    "test:only": "npm run build && brittle --only ./test/**/*.test.js",
     "prepack": "npm run build",
     "postinstall": "./postinstall.sh"
   },
@@ -37,6 +38,7 @@
     "@scure/bip32": "^1.7.0",
     "@scure/bip39": "^1.6.0",
     "@types/node": "^24.0.11",
+    "brittle": "^3.19.1",
     "circomlibjs": "^0.1.7"
   }
 }
