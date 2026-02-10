@@ -1,16 +1,26 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { hexToUint8Array, uint8ArrayToHex } from '../hash.js'
-import { getSharedSymmetricKey } from '../keys.js'
+import { hexToUint8Array, uint8ArrayToHex } from '../hash'
+import { getSharedSymmetricKey } from '../keys'
 
-import type { AddressData, Ciphertext, EncryptedCommitment, EncryptedData, LegacyCiphertext, TokenData, TransactCommitment } from './definitions.js'
-import { getNoteHash } from './note-utils.js'
-import { Note } from './note.js'
-import { deserializeTokenData } from './token-utils.js'
+import type { AddressData, Ciphertext, EncryptedCommitment, EncryptedData, LegacyCiphertext, TokenData, TransactCommitment } from './definitions'
+import { Note } from './note'
+import { getNoteHash } from './note-utils'
+import { deserializeTokenData } from './token-utils'
 
 /**
- * Represents a Transact note with additional metadata for transactions.
+ * Represents a Transact note for private-to-private transfers.
+ * These notes move value between wallets without ever exposing assets on-chain, carrying
+ * receiver/sender address data, a Poseidon {@link hash}, and optional metadata such as
+ * {@link memoText}, {@link outputType}, and {@link shieldFee}.
+ * Extends {@link Note} with transaction-specific fields.
+ *
+ * Supports both a modern msgpack serialization format and a legacy format that encrypts the
+ * random value with AES-GCM via a shared symmetric key (see {@link TransactNote.serializeLegacy}).
+ *
+ * Can be created directly, deserialized from either format, or reconstructed from on-chain
+ * commitment data ({@link TransactCommitment} or {@link EncryptedCommitment}).
  */
 class TransactNote extends Note {
   /**
@@ -176,20 +186,18 @@ class TransactNote extends Note {
   }
 
   /**
-   * Creates a TransactNote from commitment data.
-   * NOTE: This converts only the commitment data. Full decryption requires viewing keys.
+   * Creates a TransactNote from pre-decrypted commitment fields.
+   * Use {@link decryptCommitment} to obtain the fields from an encrypted commitment.
    * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
-   * @param _commitment - The TransactCommitment or EncryptedCommitment (reserved for future use)
-   * @param random - Random value (16 bytes hex string) - from decrypted ciphertext
-   * @param npk - Note public key (hex string) - from decrypted ciphertext
-   * @param value - Note value (bigint) - from decrypted ciphertext
-   * @param tokenData - Token data - from decrypted ciphertext
+   * @param random - Random value (16 bytes hex string)
+   * @param npk - Note public key (hex string)
+   * @param value - Note value (bigint)
+   * @param tokenData - Token data
    * @param receiverAddressData - Receiver address data
    * @param senderAddressData - Optional sender address data
    * @returns A new TransactNote instance
    */
   static fromCommitment (
-    _commitment: TransactCommitment | EncryptedCommitment,
     random: string,
     npk: string,
     value: bigint,
@@ -218,13 +226,11 @@ class TransactNote extends Note {
    * @returns The serialized legacy transact note
    */
   async serializeLegacy (viewingPrivateKey: Uint8Array, receiverViewingPublicKey: Uint8Array): Promise<Uint8Array> {
-    // Get shared symmetric key for encryption
     const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, receiverViewingPublicKey)
     if (!sharedKey) {
       throw new Error('Failed to generate shared symmetric key')
     }
 
-    // Encrypt the random value using AES-GCM
     const randomBytes = hexToUint8Array(this.random)
     const ciphertext = AES.encryptGCM([randomBytes], sharedKey)
 
@@ -261,30 +267,25 @@ class TransactNote extends Note {
   ): Promise<TransactNote> {
     const data = decode(bytes) as any
 
-    // Get shared symmetric key for decryption
     const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, senderViewingPublicKey)
 
     if (!sharedKey) {
       throw new Error('Failed to generate shared symmetric key')
     }
 
-    // Parse encrypted random from legacy format
     const encryptedData = data.encryptedRandom as EncryptedData
     const [ivTag, encryptedRandomData] = encryptedData
 
-    // Extract IV and tag from ivTag
     const iv = hexToUint8Array('0x' + ivTag.slice(0, 32))
     const tag = hexToUint8Array('0x' + ivTag.slice(32))
     const encData = hexToUint8Array('0x' + encryptedRandomData)
 
-    // Decrypt using AES-GCM
     const ciphertext: Ciphertext = { iv, tag, data: [encData] }
     const decrypted = AES.decryptGCM(ciphertext, sharedKey)
     const random = uint8ArrayToHex(decrypted[0] || new Uint8Array(16))
 
-    // Legacy notes can only be ERC20
     const tokenData: TokenData = {
-      tokenType: 0, // ERC20
+      tokenType: 0, // Legacy notes can only be ERC20
       tokenAddress: data.tokenHash,
       tokenSubID: '0x00'
     }

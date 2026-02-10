@@ -1,13 +1,18 @@
 import { decode, encode } from '@msgpack/msgpack'
 
-import { uint8ArrayToBigInt, uint8ArrayToHex } from '../hash.js'
+import { uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
 
-import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions.js'
-import { Note } from './note.js'
-import { deserializeTokenData } from './token-utils.js'
+import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
+import { Note } from './note'
+import { deserializeTokenData } from './token-utils'
 
 /**
- * Represents a Shield note with master public key.
+ * Represents a Shield note for converting public assets into private RAILGUN notes.
+ * This is the entry point for funds entering the privacy system via on-chain shield transactions.
+ * Extends {@link Note} with a {@link masterPublicKey} that identifies the receiving wallet.
+ *
+ * Can be created directly, deserialized from msgpack-encoded bytes, or reconstructed
+ * from on-chain commitment data ({@link GeneratedCommitment} or {@link ShieldCommitment}).
  */
 class ShieldNote extends Note {
   /**
@@ -92,7 +97,6 @@ class ShieldNote extends Note {
       throw new Error('Missing random data in commitment')
     }
 
-    // Extract masterPublicKey from shieldKey (ShieldCommitment) or use provided parameter
     let mpk: bigint
     if ('shieldKey' in commitment && commitment.shieldKey) {
       mpk = uint8ArrayToBigInt(commitment.shieldKey)
@@ -104,7 +108,6 @@ class ShieldNote extends Note {
 
     const { npk, value, token: { tokenAddress, tokenSubID, tokenType } } = commitment.preimage
 
-    // Convert tokenType string to TokenType enum number
     let tokenTypeNum: TokenType
     switch (tokenType.toUpperCase()) {
       case 'ERC20':

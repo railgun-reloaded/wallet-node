@@ -1,5 +1,5 @@
-import type { TokenData } from './definitions.js'
-import { computeTokenHash } from './token-utils.js'
+import type { TokenData } from './definitions'
+import { computeTokenHash } from './token-utils'
 
 /**
  * Abstract base class for all note types.

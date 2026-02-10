@@ -9,10 +9,6 @@ const SNARK_PRIME = 218882428718392752222464057452572750885483644004160343436982
  */
 const ERC721_NOTE_VALUE = 1n as const
 
-/**
- * Scanner commitment types - used for type safety when converting scanner data.
- * These types match the scanner's output format.
- */
 type GeneratedCommitment = {
   hash: Uint8Array;
   treeNumber: number;
@@ -22,7 +18,7 @@ type GeneratedCommitment = {
     value: bigint;
     token: {
       tokenAddress: Uint8Array;
-      tokenType: string; // Scanner uses string, needs conversion to TokenType enum
+      tokenType: string;
       tokenSubID: Uint8Array;
     };
   };
@@ -38,7 +34,7 @@ type ShieldCommitment = {
     value: bigint;
     token: {
       tokenAddress: Uint8Array;
-      tokenType: string; // Scanner uses string, needs conversion to TokenType enum
+      tokenType: string;
       tokenSubID: Uint8Array;
     };
   };
@@ -47,32 +43,23 @@ type ShieldCommitment = {
   fee?: bigint;
 }
 
-/**
- * Unshield data type - used when converting unshield events to notes.
- */
 type UnshieldData = {
   to: Uint8Array;
   token: {
     tokenAddress: Uint8Array;
-    tokenType: string; // Uses string, needs conversion to TokenType enum
+    tokenType: string;
     tokenSubID: Uint8Array;
   };
   amount: bigint;
   fee: bigint;
 }
 
-/**
- * Ciphertext type - used in encrypted commitments.
- */
 type Ciphertext = {
   iv: Uint8Array;
   tag: Uint8Array;
   data: Uint8Array[];
 }
 
-/**
- * Transact commitment type - used when converting transact events to notes.
- */
 type TransactCommitment = {
   hash: Uint8Array;
   ciphertext: Ciphertext;
@@ -84,9 +71,6 @@ type TransactCommitment = {
   treePosition: number;
 }
 
-/**
- * Encrypted commitment type - used when converting encrypted commitment events to notes.
- */
 type EncryptedCommitment = {
   hash: Uint8Array;
   ciphertext: Ciphertext;
@@ -96,57 +80,33 @@ type EncryptedCommitment = {
   treePosition: number;
 }
 
-/**
- * TokenType
- * Enumeration of supported token types in the Railgun system.
- */
 enum TokenType {
   ERC20 = 0,
   ERC721 = 1,
   ERC1155 = 2,
 }
 
-/**
- * OutputType
- * Enumeration of output types in transactions.
- */
 enum OutputType {
   Transfer = 0,
   BroadcasterFee = 1,
   Change = 2,
 }
 
-/**
- *
- * Represents data for a token, including its type, address, and sub-ID.
- */
 type TokenData = {
   tokenType: TokenType;
   tokenAddress: string;
   tokenSubID: string;
 }
 
-/**
- * ChainType
- * Enumeration of supported blockchain chain types.
- */
 enum ChainType {
   EVM = 0,
 }
 
-/**
- *
- * Represents a blockchain chain with its type and ID.
- */
 type Chain = {
   type: ChainType;
   id: number;
 }
 
-/**
- *
- * Contains address-related data including public keys and optional chain/version info.
- */
 type AddressData = {
   masterPublicKey: bigint;
   viewingPublicKey: Uint8Array;
@@ -154,10 +114,6 @@ type AddressData = {
   version?: number;
 }
 
-/**
- *
- * Represents the ciphertext data for a note, including IV, tag, and encrypted data.
- */
 type NoteCiphertext = {
   iv: string;
   tag: string;
@@ -180,9 +136,6 @@ type LegacyCiphertext = {
  */
 type EncryptedData = [string, string]
 
-/**
- * Note annotation data containing output type, sender random, and wallet source.
- */
 type NoteAnnotationData = {
   outputType: OutputType;
   senderRandom: string;
@@ -191,10 +144,6 @@ type NoteAnnotationData = {
 
 /**
  * Base interface for all note types, containing common properties.
- * notePublicKey - Also known as npk
- * random - 16 byte random
- * value - The value of the note
- * tokenData - Token data
  */
 interface NoteBase {
   notePublicKey: string;
@@ -203,22 +152,11 @@ interface NoteBase {
   tokenData: TokenData;
 }
 
-/**
- * Interface for shield notes, extending NoteBase with additional properties for shielding.
- */
 interface ShieldNote extends NoteBase {
   masterPublicKey: bigint;
   tokenHash: string;
 }
 
-/**
- * Interface for transaction notes, extending NoteBase with sender/receiver data and transaction details.
- * receiverAddressData - address data of recipient
- * senderAddressData - address data of sender
- * tokenHash - 32 byte hash of token data
- * hash - Note hash
- * shieldFee - Only used during serialization/storage of ShieldCommitments.
- */
 interface TransactNote extends NoteBase {
   receiverAddressData: AddressData;
   senderAddressData: AddressData | undefined;
@@ -232,9 +170,6 @@ interface TransactNote extends NoteBase {
   blockNumber: number | undefined;
 }
 
-/**
- * Interface for unshield notes, extending NoteBase with unshielding-specific properties.
- */
 interface UnshieldNote extends NoteBase {
   toAddress: string;
   hash: bigint;

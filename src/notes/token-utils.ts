@@ -1,9 +1,9 @@
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3'
 
-import { bigintToUint8Array, hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash.js'
+import { bigintToUint8Array, hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
 
-import type { TokenData } from './definitions.js'
-import { SNARK_PRIME } from './definitions.js'
+import type { TokenData } from './definitions'
+import { SNARK_PRIME } from './definitions'
 
 /**
  * Computes the token hash for ERC20 tokens.
@@ -13,8 +13,8 @@ import { SNARK_PRIME } from './definitions.js'
  */
 function computeTokenHashERC20 (tokenAddress: string): string {
   const cleanAddress = tokenAddress.startsWith('0x') ? tokenAddress.slice(2) : tokenAddress
-  // Pad to 32 bytes (64 hex chars)
-  const padded = cleanAddress.padStart(64, '0')
+
+  const padded = cleanAddress.padStart(64, '0') // Pad to 32 bytes (64 hex chars)
   return '0x' + padded
 }
 
@@ -25,13 +25,11 @@ function computeTokenHashERC20 (tokenAddress: string): string {
  * @returns The token hash as a hex string (32 bytes)
  */
 function computeTokenHashNFT (tokenData: TokenData): string {
-  // Prepare 32-byte components
   const tokenTypeBytes = bigintToUint8Array(BigInt(tokenData.tokenType), 32)
   const tokenAddressBytes = hexToUint8Array(tokenData.tokenAddress)
 
-  // Pad address to 32 bytes if needed
   const paddedAddress = new Uint8Array(32)
-  paddedAddress.set(tokenAddressBytes, 32 - tokenAddressBytes.length)
+  paddedAddress.set(tokenAddressBytes, 32 - tokenAddressBytes.length) // Pad address to 32 bytes if needed
 
   const tokenSubIDBytes = hexToUint8Array(tokenData.tokenSubID)
 
@@ -41,11 +39,9 @@ function computeTokenHashNFT (tokenData: TokenData): string {
   combined.set(paddedAddress, 32)
   combined.set(tokenSubIDBytes, 64)
 
-  // Hash with keccak256
   const hashed = keccak256(combined)
   const hashedBigInt = uint8ArrayToBigInt(hashed)
 
-  // Modulo SNARK_PRIME
   const modulo = hashedBigInt % SNARK_PRIME
 
   return uint8ArrayToHex(bigintToUint8Array(modulo, 32), true)
@@ -78,12 +74,13 @@ function computeTokenHash (tokenData: TokenData): string {
  */
 function getReadableTokenAddress (tokenData: TokenData): string {
   switch (tokenData.tokenType) {
-    case 0: { // TokenType.ERC20
+    case 0: {
+      // TokenType.ERC20
       const cleanAddress = tokenData.tokenAddress.startsWith('0x')
         ? tokenData.tokenAddress.slice(2)
         : tokenData.tokenAddress
-      // Trim to 20 bytes (40 hex chars)
-      const trimmed = cleanAddress.slice(-40)
+
+      const trimmed = cleanAddress.slice(-40) // Trim to 20 bytes (40 hex chars)
       return '0x' + trimmed
     }
     case 1: // TokenType.ERC721

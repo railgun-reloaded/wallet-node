@@ -1,14 +1,21 @@
 import { decode, encode } from '@msgpack/msgpack'
 
-import { uint8ArrayToHex } from '../hash.js'
+import { uint8ArrayToHex } from '../hash'
 
-import type { TokenData, TokenType, UnshieldData } from './definitions.js'
-import { getNoteHash } from './note-utils.js'
-import { Note } from './note.js'
-import { deserializeTokenData } from './token-utils.js'
+import type { TokenData, TokenType, UnshieldData } from './definitions'
+import { Note } from './note'
+import { getNoteHash } from './note-utils'
+import { deserializeTokenData } from './token-utils'
 
 /**
- * Represents an Unshield note with destination address.
+ * Represents an Unshield note for converting private RAILGUN notes back into public assets.
+ * This is the exit point for funds leaving the privacy system, sending tokens to a public
+ * destination address on-chain.
+ * Extends {@link Note} with a {@link toAddress}, a Poseidon {@link hash}, and an
+ * {@link allowOverride} flag.
+ *
+ * Can be created directly, deserialized from msgpack-encoded bytes, or constructed
+ * from on-chain unshield data via {@link UnshieldNote.fromUnshield}.
  */
 class UnshieldNote extends Note {
   /**
@@ -104,7 +111,6 @@ class UnshieldNote extends Note {
   ): UnshieldNote {
     const { to, token: { tokenAddress, tokenSubID, tokenType }, amount } = unshield
 
-    // Convert tokenType string to TokenType enum number
     let tokenTypeNum: TokenType
     switch (tokenType.toUpperCase()) {
       case 'ERC20':

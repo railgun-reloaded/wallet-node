@@ -1,9 +1,9 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { bigintToUint8Array, hexToUint8Array, uint8ArrayToBigInt } from '../hash.js'
+import { bigintToUint8Array, hexToUint8Array, uint8ArrayToBigInt } from '../hash'
 
-import type { TokenData } from './definitions.js'
-import { computeTokenHash } from './token-utils.js'
+import type { TokenData } from './definitions'
+import { computeTokenHash } from './token-utils'
 
 /**
  * Validates that random value is the correct length (16 bytes).
