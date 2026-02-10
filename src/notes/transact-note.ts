@@ -4,7 +4,7 @@ import { AES } from '@railgun-reloaded/cryptography'
 import { hexToUint8Array, uint8ArrayToHex } from '../hash'
 import { getSharedSymmetricKey } from '../keys'
 
-import type { AddressData, Ciphertext, EncryptedCommitment, EncryptedData, LegacyCiphertext, TokenData, TransactCommitment } from './definitions'
+import type { AddressData, Ciphertext, EncryptedData, LegacyCiphertext, TokenData } from './definitions'
 import { Note } from './note'
 import { getNoteHash } from './note-utils'
 import { deserializeTokenData } from './token-utils'
