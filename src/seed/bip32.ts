@@ -1,5 +1,5 @@
-import { encodeBytes, sha512HMAC } from '../hash.js'
-import type { KeyNode } from '../types.js'
+import { encodeBytes, sha512HMAC } from '../hash'
+import type { KeyNode } from '../types'
 
 const CURVE_SEED = encodeBytes('babyjubjub seed') // same calculation as current engine
 

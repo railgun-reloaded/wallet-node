@@ -1,10 +1,10 @@
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToHex } from '../hash.js'
-import { getSharedSymmetricKey } from '../keys.js'
+import { uint8ArrayToHex } from '../hash'
+import { getSharedSymmetricKey } from '../keys'
 
-import type { Ciphertext, TokenData } from './definitions.js'
-import { serializeTokenData } from './token-utils.js'
+import type { Ciphertext, TokenData } from './definitions'
+import { serializeTokenData } from './token-utils'
 
 interface DecryptedCommitmentData {
   random: string
