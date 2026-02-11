@@ -129,7 +129,6 @@ function bigintToHex (value: bigint, byteLength: number): string {
  * - tokenAddress: formatted to 20 bytes (40 hex chars) with 0x prefix
  * - tokenType: coerced to number (handles bigint from contract calls)
  * - tokenSubID: formatted to 32 bytes (64 hex chars) with 0x prefix
- *
  * @param tokenAddress - The token contract address (hex string)
  * @param tokenType - The token type (0=ERC20, 1=ERC721, 2=ERC1155), accepts bigint or number
  * @param tokenSubID - The token sub-identifier (hex string or bigint), 0 for ERC20
