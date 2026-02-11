@@ -1,5 +1,6 @@
 import type { TokenData } from './definitions'
-import { computeTokenHash } from './token-utils'
+import { assertValidNoteRandom } from './note-utils'
+import { assertValidNoteToken, computeTokenHash } from './token-utils'
 
 /**
  * Abstract base class for all note types.
@@ -44,6 +45,8 @@ abstract class Note {
     tokenData: TokenData,
     random: string
   ) {
+    assertValidNoteRandom(random)
+    assertValidNoteToken(tokenData, value)
     this.notePublicKey = notePublicKey
     this.value = value
     this.tokenData = tokenData

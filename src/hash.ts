@@ -110,8 +110,7 @@ const xorBytesInPlace = (
   offset: number = 0
 ): void => {
   for (let i = offset; i < a.length; i++) {
-    // @ts-ignore -- TODO: come back and fix this type error later.
-    outputBuffer[i] = a[i] ^ b[i]
+    outputBuffer[i] = a[i]! ^ b[i]!
   }
 }
 

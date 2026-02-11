@@ -1,5 +1,3 @@
-// @ts-ignore
-
 import * as ed25519 from '@noble/ed25519'
 import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
@@ -85,32 +83,26 @@ const adjustBytes25519 = (bytes: Uint8Array, endian: 'be' | 'le'): Uint8Array =>
     throw new Error('Invalid input: bytes must be a Uint8Array of length 32')
   }
 
-  if (adjustedBytes && endian === 'be') {
+  if (endian === 'be') {
     // BIG ENDIAN
     // AND operation to ensure the last 3 bits of the last byte are 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[31] &= 0b11111000
+    adjustedBytes[31]! &= 0b11111000
 
     // AND operation to ensure the first bit of the first byte is 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[0] &= 0b01111111
+    adjustedBytes[0]! &= 0b01111111
 
-    // OR operation to ensure the second bit of the first byte is 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[0] |= 0b01000000
+    // OR operation to ensure the second bit of the first byte is 1 leaving the rest unchanged
+    adjustedBytes[0]! |= 0b01000000
   } else {
     // LITTLE ENDIAN
     // AND operation to ensure the last 3 bits of the first byte are 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[0] &= 0b11111000
+    adjustedBytes[0]! &= 0b11111000
 
     // AND operation to ensure the first bit of the last byte is 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[31] &= 0b01111111
+    adjustedBytes[31]! &= 0b01111111
 
-    // OR operation to ensure the second bit of the last byte is 0 leaving the rest unchanged
-    // @ts-ignore
-    adjustedBytes[31] |= 0b01000000
+    // OR operation to ensure the second bit of the last byte is 1 leaving the rest unchanged
+    adjustedBytes[31]! |= 0b01000000
   }
 
   // Return adjusted bytes
@@ -178,8 +170,7 @@ const getSharedSymmetricKey = async (
     // SHA256 hash to get the final key
     const hashed: Uint8Array = sha256(keyPreimage)
     return hashed
-  } catch (err) {
-    console.log(err)
+  } catch {
     return undefined
   }
 }
@@ -195,7 +186,6 @@ const scalarMultiplyWasmFallbackToJavascript = (
   blindedPublicKeyPairB: Uint8Array<ArrayBufferLike>,
   scalar: Uint8Array<ArrayBufferLike>
 ): Uint8Array<ArrayBufferLike> => {
-  // const wasm = require("wasm-crypto");
   return scalarMultiplyJavascript(blindedPublicKeyPairB, scalar)
 }
 
@@ -257,8 +247,6 @@ const getBlindingScalar = (
   sharedRandom: Uint8Array,
   senderRandom: Uint8Array
 ): bigint => {
-  // const finalRandom =
-  //   uint8ArrayToBigInt(sharedRandom) ^ uint8ArrayToBigInt(senderRandom);
   const finalRandom = new Uint8Array(sharedRandom.length)
   xorBytesInPlace(sharedRandom, senderRandom, finalRandom)
 
@@ -318,11 +306,7 @@ const unblindNoteKey = (
     const blindingScalar = getBlindingScalar(sharedRandom, senderRandom)
 
     // Create curve point instance from ephemeral key bytes
-    const point = Point.fromHex(
-      // uint8ArrayToBigInt(
-      blindedNoteKey
-      // ).toString(16)
-    )
+    const point = Point.fromHex(blindedNoteKey)
 
     // Invert the scalar to undo blinding multiplication operation
     const inverse = ed25519.etc.invert(blindingScalar, ed25519.CURVE.n)

@@ -587,7 +587,7 @@ test('shield-note - fromCommitment with ShieldCommitment', async (t) => {
     treePosition: 0,
     preimage: {
       npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
-      value: 7777n,
+      value: 1n,
       token: {
         tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
         tokenType: 'ERC721',
@@ -606,7 +606,7 @@ test('shield-note - fromCommitment with ShieldCommitment', async (t) => {
     shieldNote instanceof ShieldNote,
     'should create ShieldNote from ShieldCommitment'
   )
-  t.is(shieldNote.value, 7777n, 'should set value')
+  t.is(shieldNote.value, 1n, 'should set value')
   t.is(
     shieldNote.masterPublicKey,
     BigInt('112233445566778899'),

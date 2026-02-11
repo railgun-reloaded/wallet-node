@@ -117,10 +117,7 @@ class WalletNode {
     spendingPublicKey: [Uint8Array, Uint8Array],
     nullifyingKey: Uint8Array
   ): Uint8Array {
-    // convert these from uint8Arrays here, they should be
-    // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
-    const output = poseidon([...spendingPublicKey, nullifyingKey]) as Uint8Array
-    return output
+    return poseidon([...spendingPublicKey, nullifyingKey]) as Uint8Array
   }
 
   /**
@@ -131,7 +128,6 @@ class WalletNode {
    * @returns ViewingKeyPair object containing privateKey and pubkey (both Uint8Arrays)
    */
   getViewingKeyPair (): ViewingKeyPair {
-    // TODO: THIS should be a separate node chainkey
     const privateKey = this.chainKey
     const pubkey = getPublicViewingKey(privateKey)
     return { privateKey, pubkey }
@@ -144,11 +140,7 @@ class WalletNode {
    * @returns The calculated nullifying key as a Uint8Array.
    */
   getNullifyingKey (): Uint8Array {
-    // TODO: store these securely instead of calculating every time?
     const { privateKey } = this.getViewingKeyPair()
-
-    // const uint8Array = [uint8ArrayToBigInt(privateKey)]
-    // TODO: properly do this, as its being 'set to' uint8 array inside here, and now revisded as bigint
     return poseidon([privateKey])
   }
 }
