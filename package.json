@@ -9,7 +9,7 @@
     "lint:fix": "eslint --fix",
     "pretest": "npm run build",
     "test": "npm run build && brittle ./test/**/*.test.js",
-    "test:only": "npm run build && brittle --only ./test/**/*.test.js",
+    "test:only": "npm run build && brittle --solo ./test/**/*.test.js",
     "prepack": "npm run build",
     "postinstall": "./postinstall.sh"
   },
@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/railgun-reloaded/wallet-node#readme",
   "devDependencies": {
+    "@types/brittle": "^3.5.0",
     "eslint": "^9.24.0",
     "typescript": "^5.8.3"
   },

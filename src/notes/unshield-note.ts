@@ -5,7 +5,7 @@ import { uint8ArrayToHex } from '../hash'
 import type { TokenData, TokenType, UnshieldData } from './definitions'
 import { Note } from './note'
 import { getNoteHash } from './note-utils'
-import { deserializeTokenData } from './token-utils'
+import { deserializeTokenData, serializeTokenData } from './token-utils'
 
 /**
  * Represents an Unshield note for converting private RAILGUN notes back into public assets.
@@ -126,11 +126,11 @@ class UnshieldNote extends Note {
         throw new Error(`Invalid tokenType: ${tokenType}`)
     }
 
-    const tokenData: TokenData = {
-      tokenType: tokenTypeNum,
-      tokenAddress: uint8ArrayToHex(tokenAddress),
-      tokenSubID: uint8ArrayToHex(tokenSubID),
-    }
+    const tokenData = serializeTokenData(
+      uint8ArrayToHex(tokenAddress),
+      tokenTypeNum,
+      uint8ArrayToHex(tokenSubID)
+    )
 
     const toAddress = uint8ArrayToHex(to)
     const hash = getNoteHash(toAddress, tokenData, amount)

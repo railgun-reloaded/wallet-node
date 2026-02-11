@@ -4,7 +4,7 @@ import { uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
 
 import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
 import { Note } from './note'
-import { deserializeTokenData } from './token-utils'
+import { deserializeTokenData, serializeTokenData } from './token-utils'
 
 /**
  * Represents a Shield note for converting public assets into private RAILGUN notes.
@@ -123,11 +123,11 @@ class ShieldNote extends Note {
         throw new Error(`Invalid tokenType: ${tokenType}`)
     }
 
-    const tokenData: TokenData = {
-      tokenType: tokenTypeNum,
-      tokenAddress: uint8ArrayToHex(tokenAddress),
-      tokenSubID: uint8ArrayToHex(tokenSubID),
-    }
+    const tokenData = serializeTokenData(
+      uint8ArrayToHex(tokenAddress),
+      tokenTypeNum,
+      uint8ArrayToHex(tokenSubID)
+    )
 
     return new ShieldNote(
       uint8ArrayToHex(npk),

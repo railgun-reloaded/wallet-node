@@ -179,7 +179,7 @@ test('token-utils - getReadableTokenAddress invalid type', (t) => {
 })
 
 test('token-utils - serializeTokenData roundtrip ERC20', (t) => {
-  const serialized = serializeTokenData(ERC20_TOKEN_DATA)
+  const serialized = serializeTokenData(ERC20_TOKEN_DATA.tokenAddress, ERC20_TOKEN_DATA.tokenType, ERC20_TOKEN_DATA.tokenSubID)
   const deserialized = deserializeTokenData(serialized)
 
   t.is(
@@ -200,7 +200,7 @@ test('token-utils - serializeTokenData roundtrip ERC20', (t) => {
 })
 
 test('token-utils - serializeTokenData roundtrip ERC721', (t) => {
-  const serialized = serializeTokenData(ERC721_TOKEN_DATA)
+  const serialized = serializeTokenData(ERC721_TOKEN_DATA.tokenAddress, ERC721_TOKEN_DATA.tokenType, ERC721_TOKEN_DATA.tokenSubID)
   const deserialized = deserializeTokenData(serialized)
 
   t.is(
@@ -221,7 +221,7 @@ test('token-utils - serializeTokenData roundtrip ERC721', (t) => {
 })
 
 test('token-utils - serializeTokenData roundtrip ERC1155', (t) => {
-  const serialized = serializeTokenData(ERC1155_TOKEN_DATA)
+  const serialized = serializeTokenData(ERC1155_TOKEN_DATA.tokenAddress, ERC1155_TOKEN_DATA.tokenType, ERC1155_TOKEN_DATA.tokenSubID)
   const deserialized = deserializeTokenData(serialized)
 
   t.is(
@@ -948,21 +948,6 @@ test('transact-note - getTokenHash matches computeTokenHash', async (t) => {
 test('transact-note - fromCommitment', async (t) => {
   await initializeCryptographyLibs()
 
-  const commitment = {
-    hash: new Uint8Array(32),
-    ciphertext: {
-      iv: new Uint8Array(16),
-      tag: new Uint8Array(16),
-      data: [] as Uint8Array[],
-    },
-    blindedSenderViewingKey: new Uint8Array(32),
-    blindedReceiverViewingKey: new Uint8Array(32),
-    annotationData: new Uint8Array(0),
-    memo: [],
-    treeNumber: 0,
-    treePosition: 0,
-  }
-
   const random = TEST_RANDOM
   const npk = TEST_NPK
   const value = TEST_VALUE
@@ -972,7 +957,6 @@ test('transact-note - fromCommitment', async (t) => {
   }
 
   const transactNote = TransactNote.fromCommitment(
-    commitment,
     random,
     npk,
     value,
@@ -995,21 +979,6 @@ test('transact-note - fromCommitment', async (t) => {
 test('transact-note - fromCommitment with senderAddressData', async (t) => {
   await initializeCryptographyLibs()
 
-  const commitment = {
-    hash: new Uint8Array(32),
-    ciphertext: {
-      iv: new Uint8Array(16),
-      tag: new Uint8Array(16),
-      data: [] as Uint8Array[],
-    },
-    blindedSenderViewingKey: new Uint8Array(32),
-    blindedReceiverViewingKey: new Uint8Array(32),
-    annotationData: new Uint8Array(0),
-    memo: [],
-    treeNumber: 0,
-    treePosition: 0,
-  }
-
   const receiverAddressData = {
     masterPublicKey: BigInt('111'),
     viewingPublicKey: new Uint8Array(32),
@@ -1020,7 +989,6 @@ test('transact-note - fromCommitment with senderAddressData', async (t) => {
   }
 
   const transactNote = TransactNote.fromCommitment(
-    commitment,
     TEST_RANDOM,
     TEST_NPK,
     TEST_VALUE,

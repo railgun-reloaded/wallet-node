@@ -10,7 +10,7 @@ import {
   bigintToUint8Array,
   uint8ArrayToBigInt,
   xorBytesInPlace,
-} from './hash.js'
+} from './hash'
 
 const CURVE_L = BigInt(
   '7237005577332262213973186563042994240857116359379907606001950938285454250989'

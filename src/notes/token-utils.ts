@@ -91,29 +91,106 @@ function getReadableTokenAddress (tokenData: TokenData): string {
   }
 }
 
+/** Null token sub ID for ERC20 tokens (no sub-identifier). */
+const TOKEN_SUB_ID_NULL = '0x00'
+
 /**
- * Serializes token data to a plain object.
- * @param token - The token data to serialize
- * @returns The serialized token data object
+ * Normalizes a hex string to a fixed byte length with 0x prefix.
+ * Strips 0x prefix, left-pads with zeros, then trims from the left to the target length.
+ * @param hex - Input hex string (with or without 0x prefix)
+ * @param byteLength - Target length in bytes
+ * @returns Normalized hex string with 0x prefix
  */
-function serializeTokenData (token: TokenData): object {
+function formatHexToByteLength (hex: string, byteLength: number): string {
+  const clean = hex.startsWith('0x') ? hex.slice(2) : hex
+  const charLength = byteLength * 2
+  const padded = clean.padStart(charLength, '0')
+  // Trim from the left to target length (keeps the least-significant bytes)
+  return '0x' + padded.slice(padded.length - charLength)
+}
+
+/**
+ * Converts a bigint to a 0x-prefixed hex string of a fixed byte length.
+ * @param value - The bigint value
+ * @param byteLength - Target length in bytes
+ * @returns Hex string with 0x prefix, zero-padded to the specified length
+ */
+function bigintToHex (value: bigint, byteLength: number): string {
+  const hex = value.toString(16)
+  const charLength = byteLength * 2
+  return '0x' + hex.padStart(charLength, '0')
+}
+
+/**
+ * Serializes raw token components into a normalized TokenData object.
+ * Inspired by the engine's serializeTokenData in note-util.ts.
+ *
+ * Normalizations applied:
+ * - tokenAddress: formatted to 20 bytes (40 hex chars) with 0x prefix
+ * - tokenType: coerced to number (handles bigint from contract calls)
+ * - tokenSubID: formatted to 32 bytes (64 hex chars) with 0x prefix
+ *
+ * @param tokenAddress - The token contract address (hex string)
+ * @param tokenType - The token type (0=ERC20, 1=ERC721, 2=ERC1155), accepts bigint or number
+ * @param tokenSubID - The token sub-identifier (hex string or bigint), 0 for ERC20
+ * @returns A normalized TokenData object
+ */
+function serializeTokenData (
+  tokenAddress: string,
+  tokenType: bigint | number,
+  tokenSubID: bigint | string
+): TokenData {
   return {
-    tokenAddress: token.tokenAddress,  // string
-    tokenType: token.tokenType,        // number
-    tokenSubID: token.tokenSubID,      // string
+    tokenAddress: formatHexToByteLength(tokenAddress, 20),
+    tokenType: Number(tokenType),
+    tokenSubID: bigintToHex(BigInt(tokenSubID), 32),
   }
 }
 
 /**
- * Deserializes token data from a plain object.
+ * Creates a normalized TokenData for an ERC20 token.
+ * @param tokenAddress - The ERC20 token contract address (hex string)
+ * @returns A normalized TokenData object with tokenType=0 and tokenSubID=0
+ */
+function getTokenDataERC20 (tokenAddress: string): TokenData {
+  return serializeTokenData(tokenAddress, 0, TOKEN_SUB_ID_NULL)
+}
+
+/**
+ * Creates a normalized TokenData for an NFT token (ERC721 or ERC1155).
+ * @param nftAddress - The NFT contract address (hex string)
+ * @param tokenType - Must be 1 (ERC721) or 2 (ERC1155)
+ * @param tokenSubID - The NFT token ID (hex string or bigint)
+ * @returns A normalized TokenData object
+ */
+function getTokenDataNFT (nftAddress: string, tokenType: 1 | 2, tokenSubID: string): TokenData {
+  return serializeTokenData(nftAddress, tokenType, tokenSubID)
+}
+
+/**
+ * Deserializes and validates token data from a plain object (e.g. from msgpack decoding).
+ * Ensures all fields are present and properly formatted.
  * @param data - The object containing serialized token data
- * @returns The deserialized TokenData object
+ * @returns A validated and normalized TokenData object
+ * @throws {Error} If required fields are missing or tokenType is invalid
  */
 function deserializeTokenData (data: any): TokenData {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid token data: expected an object')
+  }
+  if (data.tokenAddress == null || data.tokenType == null || data.tokenSubID == null) {
+    throw new Error('Invalid token data: missing required fields (tokenAddress, tokenType, tokenSubID)')
+  }
+
+  const tokenType = Number(data.tokenType)
+  if (tokenType !== 0 && tokenType !== 1 && tokenType !== 2) {
+    throw new Error(`Invalid token type: ${data.tokenType}`)
+  }
+
   return {
-    tokenAddress: data.tokenAddress,
-    tokenType: data.tokenType,
-    tokenSubID: data.tokenSubID,
+    tokenAddress: formatHexToByteLength(String(data.tokenAddress), 20),
+    tokenType,
+    tokenSubID: bigintToHex(BigInt(data.tokenSubID), 32),
   }
 }
 
@@ -183,11 +260,14 @@ function assertValidNoteToken (tokenData: TokenData, value: bigint): void {
 }
 
 export {
+  TOKEN_SUB_ID_NULL,
   computeTokenHashERC20,
   computeTokenHashNFT,
   computeTokenHash,
   getReadableTokenAddress,
   serializeTokenData,
+  getTokenDataERC20,
+  getTokenDataNFT,
   deserializeTokenData,
   assertValidNoteToken
 }

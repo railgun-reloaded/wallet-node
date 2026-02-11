@@ -4,6 +4,7 @@ import { uint8ArrayToHex } from '../hash.js'
 import { getSharedSymmetricKey } from '../keys.js'
 
 import type { Ciphertext, TokenData } from './definitions.js'
+import { serializeTokenData } from './token-utils.js'
 
 interface DecryptedCommitmentData {
   random: string
@@ -65,11 +66,7 @@ async function decryptCommitment (
     const tokenSubIDBytes = combinedData.slice(offset, offset + 32) // (32 bytes)
     const tokenSubID = uint8ArrayToHex(tokenSubIDBytes)
 
-    const tokenData: TokenData = {
-      tokenType,
-      tokenAddress,
-      tokenSubID
-    }
+    const tokenData = serializeTokenData(tokenAddress, tokenType, tokenSubID)
 
     return { random, npk, value, tokenData }
   } catch (error) {
