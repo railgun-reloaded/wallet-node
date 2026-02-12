@@ -211,5 +211,11 @@ interface TransactNoteSerialized {
   blockNumber: number | undefined;
 }
 
+/**
+ * Null sender random value used when annotation data decryption fails.
+ * 15 zero bytes (30 hex chars) matching the senderRandom field size.
+ */
+const MEMO_SENDER_RANDOM_NULL = '000000000000000000000000000000'
+
 export type { TokenData, Chain, AddressData, NoteCiphertext, LegacyCiphertext, EncryptedData, NoteAnnotationData, NoteBase, ShieldNote, TransactNote, LegacyTransactNoteSerialized, TransactNoteSerialized, UnshieldNote, GeneratedCommitment, ShieldCommitment, UnshieldData, Ciphertext, TransactCommitment, EncryptedCommitment }
-export { TokenType, OutputType, ChainType, SNARK_PRIME, ERC721_NOTE_VALUE }
+export { TokenType, OutputType, ChainType, SNARK_PRIME, ERC721_NOTE_VALUE, MEMO_SENDER_RANDOM_NULL }

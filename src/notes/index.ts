@@ -2,6 +2,8 @@ export * from './decrypt-commitment'
 export * from './definitions'
 export * from './token-utils'
 export * from './note-utils'
+export * from './wallet-info'
+export * from './memo'
 
 export { Note } from './note'
 export { ShieldNote } from './shield-note'
