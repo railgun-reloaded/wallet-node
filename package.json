@@ -24,6 +24,8 @@
     "url": "https://github.com/railgun-reloaded/wallet-node/issues"
   },
   "homepage": "https://github.com/railgun-reloaded/wallet-node#readme",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "devDependencies": {
     "@types/brittle": "^3.5.0",
     "eslint": "^9.24.0",

@@ -1,6 +1,8 @@
 import { decode, encode } from '@msgpack/msgpack'
+import { AES } from '@railgun-reloaded/cryptography'
 
 import { uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
+import { getSharedSymmetricKey } from '../keys'
 
 import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
 import { Note } from './note'
@@ -76,36 +78,79 @@ class ShieldNote extends Note {
   }
 
   /**
-   * Creates a ShieldNote from commitment data.
-   * Handles both GeneratedCommitment and ShieldCommitment types.
+   * Creates a ShieldNote from a GeneratedCommitment (V1).
+   * The random value is stored in plaintext in encryptedRandom[0].
    * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
-   * @param commitment - The commitment object
-   * @param masterPublicKey - Optional master public key as bigint (required for GeneratedCommitment)
+   * @param commitment - The GeneratedCommitment object
+   * @param masterPublicKey - The master public key as bigint
    * @returns A new ShieldNote instance
-   * @throws {Error} If required fields are missing or poseidon is not initialized
    */
-  static fromCommitment (
-    commitment: GeneratedCommitment | ShieldCommitment,
-    masterPublicKey?: bigint
+  static fromGeneratedCommitment (
+    commitment: GeneratedCommitment,
+    masterPublicKey: bigint
   ): ShieldNote {
-    // Extract random from encryptedRandom (GeneratedCommitment) or encryptedBundle (ShieldCommitment)
-    const randomBytes = 'encryptedRandom' in commitment
-      ? commitment.encryptedRandom?.[0]
-      : commitment.encryptedBundle?.[0]
-
+    const randomBytes = commitment.encryptedRandom?.[0]
     if (!randomBytes) {
-      throw new Error('Missing random data in commitment')
+      throw new Error('Missing random data in GeneratedCommitment')
     }
 
-    let mpk: bigint
-    if ('shieldKey' in commitment && commitment.shieldKey) {
-      mpk = uint8ArrayToBigInt(commitment.shieldKey)
-    } else if (masterPublicKey !== undefined) {
-      mpk = masterPublicKey
-    } else {
-      throw new Error('Missing masterPublicKey - required for GeneratedCommitment')
+    return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
+  }
+
+  /**
+   * Creates a ShieldNote from a ShieldCommitment (V2+).
+   * The random is encrypted in encryptedBundle and must be decrypted
+   * using ECDH(viewingPrivateKey, shieldKey).
+   * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
+   * @param commitment - The ShieldCommitment object
+   * @param viewingPrivateKey - The wallet's viewing private key for ECDH decryption
+   * @returns A new ShieldNote instance, or null if decryption fails (not addressed to this wallet)
+   */
+  static async fromShieldCommitment (
+    commitment: ShieldCommitment,
+    viewingPrivateKey: Uint8Array
+  ): Promise<ShieldNote | null> {
+    if (!commitment.encryptedBundle || commitment.encryptedBundle.length < 3) {
+      throw new Error('Invalid encryptedBundle in ShieldCommitment')
     }
 
+    const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, commitment.shieldKey)
+    if (!sharedKey) {
+      return null
+    }
+
+    try {
+      // Bundle format: [data0 (32 bytes), data1 (32 bytes), ivTag (32 bytes)]
+      const ivTag = commitment.encryptedBundle[2]!
+      const iv = ivTag.slice(0, 16)
+      const tag = ivTag.slice(16, 32)
+      const data = [commitment.encryptedBundle[0]!, commitment.encryptedBundle[1]!]
+
+      const decrypted = AES.decryptGCM({ iv, tag, data }, sharedKey)
+
+      // First 16 bytes of first decrypted block is the random
+      const randomBytes = decrypted[0]!.slice(0, 16)
+      const mpk = uint8ArrayToBigInt(commitment.shieldKey)
+
+      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), mpk)
+    } catch {
+      // Decryption failed — commitment not addressed to this wallet
+      return null
+    }
+  }
+
+  /**
+   * Builds a ShieldNote from a commitment's preimage data and a decrypted random value.
+   * @param commitment - The commitment containing the preimage
+   * @param random - The decrypted random value as hex string
+   * @param masterPublicKey - The master public key
+   * @returns A new ShieldNote instance
+   */
+  private static buildFromPreimage (
+    commitment: GeneratedCommitment | ShieldCommitment,
+    random: string,
+    masterPublicKey: bigint
+  ): ShieldNote {
     const { npk, value, token: { tokenAddress, tokenSubID, tokenType } } = commitment.preimage
 
     let tokenTypeNum: TokenType
@@ -133,8 +178,8 @@ class ShieldNote extends Note {
       uint8ArrayToHex(npk),
       value,
       tokenData,
-      uint8ArrayToHex(randomBytes),
-      mpk
+      random,
+      masterPublicKey
     )
   }
 }

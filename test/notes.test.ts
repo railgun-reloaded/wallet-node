@@ -538,7 +538,7 @@ test('shield-note - getTokenHash matches computeTokenHash', async (t) => {
   )
 })
 
-test('shield-note - fromCommitment with GeneratedCommitment', async (t) => {
+test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
   await initializeCryptographyLibs()
 
   const masterPublicKey = BigInt('999888777666555444333222111')
@@ -558,7 +558,7 @@ test('shield-note - fromCommitment with GeneratedCommitment', async (t) => {
     encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
   }
 
-  const shieldNote = ShieldNote.fromCommitment(commitment, masterPublicKey)
+  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, masterPublicKey)
 
   t.ok(
     shieldNote instanceof ShieldNote,
@@ -577,10 +577,29 @@ test('shield-note - fromCommitment with GeneratedCommitment', async (t) => {
   )
 })
 
-test('shield-note - fromCommitment with ShieldCommitment', async (t) => {
+test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
   await initializeCryptographyLibs()
 
-  const shieldKeyBytes = bigintToUint8Array(BigInt('112233445566778899'), 32)
+  // Generate real key pair for ECDH
+  const viewingPrivateKey = randomBytes(32)
+  const shieldKey = getPublicViewingKey(viewingPrivateKey)
+
+  // Build plaintext: random (16 bytes) + padding (16 bytes) = block0 (32 bytes), block1 (32 bytes)
+  const noteRandom = hexToUint8Array('0x' + 'ef'.repeat(16))
+  const block0 = new Uint8Array(32)
+  block0.set(noteRandom, 0)
+  const block1 = new Uint8Array(32)
+
+  // Encrypt with shared key derived from ECDH(viewingPrivateKey, shieldKey)
+  const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, shieldKey)
+  t.ok(sharedKey, 'should derive shared key')
+  const ciphertext = AES.encryptGCM([block0, block1], sharedKey!)
+
+  // Pack into bundle format: [data0, data1, ivTag]
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -596,30 +615,69 @@ test('shield-note - fromCommitment with ShieldCommitment', async (t) => {
         ),
       },
     },
-    encryptedBundle: [hexToUint8Array('0x' + 'ef'.repeat(16))],
-    shieldKey: shieldKeyBytes,
+    encryptedBundle: [ciphertext.data[0]!, ciphertext.data[1]!, ivTag],
+    shieldKey,
   }
 
-  const shieldNote = ShieldNote.fromCommitment(commitment)
+  const shieldNote = await ShieldNote.fromShieldCommitment(commitment, viewingPrivateKey)
 
   t.ok(
     shieldNote instanceof ShieldNote,
     'should create ShieldNote from ShieldCommitment'
   )
-  t.is(shieldNote.value, 1n, 'should set value')
+  t.is(shieldNote!.value, 1n, 'should set value')
   t.is(
-    shieldNote.masterPublicKey,
-    BigInt('112233445566778899'),
-    'should extract masterPublicKey from shieldKey'
+    shieldNote!.random,
+    uint8ArrayToHex(noteRandom),
+    'should decrypt random correctly'
   )
   t.is(
-    shieldNote.tokenData.tokenType,
+    shieldNote!.tokenData.tokenType,
     1,
     'should convert ERC721 string to enum'
   )
 })
 
-test('shield-note - fromCommitment ERC1155 token type conversion', async (t) => {
+test('shield-note - fromShieldCommitment returns null for wrong key', async (t) => {
+  await initializeCryptographyLibs()
+
+  // Encrypt with one key pair
+  const shielderPrivateKey = randomBytes(32)
+  const shieldKey = getPublicViewingKey(shielderPrivateKey)
+
+  const sharedKey = await getSharedSymmetricKey(shielderPrivateKey, shieldKey)
+  const block0 = new Uint8Array(32)
+  const block1 = new Uint8Array(32)
+  const ciphertext = AES.encryptGCM([block0, block1], sharedKey!)
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
+  const commitment = {
+    hash: new Uint8Array(32),
+    treeNumber: 0,
+    treePosition: 0,
+    preimage: {
+      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      value: 5000n,
+      token: {
+        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenType: 'ERC20',
+        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+      },
+    },
+    encryptedBundle: [ciphertext.data[0]!, ciphertext.data[1]!, ivTag],
+    shieldKey,
+  }
+
+  // Try to decrypt with a different private key
+  const wrongPrivateKey = randomBytes(32)
+  const result = await ShieldNote.fromShieldCommitment(commitment, wrongPrivateKey)
+
+  t.is(result, null, 'should return null when decryption fails')
+})
+
+test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', async (t) => {
   await initializeCryptographyLibs()
 
   const commitment = {
@@ -640,7 +698,7 @@ test('shield-note - fromCommitment ERC1155 token type conversion', async (t) => 
     encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
   }
 
-  const shieldNote = ShieldNote.fromCommitment(commitment, 1n)
+  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, 1n)
 
   t.is(
     shieldNote.tokenData.tokenType,
@@ -649,7 +707,7 @@ test('shield-note - fromCommitment ERC1155 token type conversion', async (t) => 
   )
 })
 
-test('shield-note - fromCommitment missing random throws', async (t) => {
+test('shield-note - fromGeneratedCommitment missing random throws', async (t) => {
   await initializeCryptographyLibs()
 
   const commitment = {
@@ -669,36 +727,11 @@ test('shield-note - fromCommitment missing random throws', async (t) => {
   }
 
   t.exception(() => {
-    ShieldNote.fromCommitment(commitment, 1n)
+    ShieldNote.fromGeneratedCommitment(commitment, 1n)
   }, 'should throw when random data is missing')
 })
 
-test('shield-note - fromCommitment missing masterPublicKey throws', async (t) => {
-  await initializeCryptographyLibs()
-
-  const commitment = {
-    hash: new Uint8Array(32),
-    treeNumber: 0,
-    treePosition: 0,
-    preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
-      value: 5000n,
-      token: {
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
-        tokenType: 'ERC20',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
-      },
-    },
-    encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
-  }
-
-  t.exception(() => {
-    // No masterPublicKey param and no shieldKey in commitment
-    ShieldNote.fromCommitment(commitment)
-  }, 'should throw when masterPublicKey is missing for GeneratedCommitment')
-})
-
-test('shield-note - fromCommitment invalid tokenType throws', async (t) => {
+test('shield-note - fromGeneratedCommitment invalid tokenType throws', async (t) => {
   await initializeCryptographyLibs()
 
   const commitment = {
@@ -718,7 +751,7 @@ test('shield-note - fromCommitment invalid tokenType throws', async (t) => {
   }
 
   t.exception(() => {
-    ShieldNote.fromCommitment(commitment, 1n)
+    ShieldNote.fromGeneratedCommitment(commitment, 1n)
   }, 'should throw for invalid token type string')
 })
 
