@@ -92,7 +92,6 @@ const bigintToUint8Array = (value: bigint, length = 32): Uint8Array => {
   return bytes
 }
 
-// assumes buffers are both the same length.
 /**
  * Performs an in-place XOR operation between two input byte arrays (`a` and `b`) and stores the result
  * in the provided output buffer (`outputBuffer`). The operation starts at the specified offset.
