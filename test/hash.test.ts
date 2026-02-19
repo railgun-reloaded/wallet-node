@@ -7,7 +7,7 @@ import {
   sha512HMAC,
   uint8ArrayToBigInt,
   xorBytesInPlace
-} from '../src/hash'
+} from '../src/encoding'
 
 test('hash - sha512HMAC', (t) => {
   const key = new Uint8Array([1, 2, 3, 4])

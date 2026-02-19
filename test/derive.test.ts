@@ -1,6 +1,6 @@
 import { hook, test } from 'brittle'
 
-import { DERIVATION_PATH_PREFIXES, deriveNodes, derivePathsForIndex } from '../src/derive'
+import { DERIVATION_PATH_PREFIXES, deriveNodes, derivePathsForIndex } from '../src/derivation'
 import { initializeCryptographyLibs } from '../src/keys'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'

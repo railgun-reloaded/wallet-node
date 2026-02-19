@@ -144,4 +144,27 @@ const hexToUint8Array = (hex: string): Uint8Array => {
   return hexToArray(cleanHex)
 }
 
-export { xorBytesInPlace, bigIntToArray, bigintToUint8Array, encodeBytes, uint8ArrayToBigInt, sha512HMAC, hexToArray, uint8ArrayToHex, hexToUint8Array }
+/**
+ * Strips 0x prefix and pads hex string to the target byte length (left-padded with zeros).
+ * @param hex - hex string, optionally prefixed with 0x
+ * @param byteLength - target length in bytes
+ * @returns padded hex string without 0x prefix
+ */
+const formatToByteLength = (hex: string, byteLength: number): string => {
+  const stripped = hex.startsWith('0x') ? hex.slice(2) : hex
+  return stripped.padStart(byteLength * 2, '0')
+}
+
+/**
+ * Converts a bigint to a 0x-prefixed hex string of a fixed byte length.
+ * @param value - The bigint value
+ * @param byteLength - Target length in bytes
+ * @returns Hex string with 0x prefix, zero-padded to the specified length
+ */
+const bigintToHex = (value: bigint, byteLength: number): string => {
+  const hex = value.toString(16)
+  const charLength = byteLength * 2
+  return '0x' + hex.padStart(charLength, '0')
+}
+
+export { xorBytesInPlace, bigIntToArray, bigintToUint8Array, encodeBytes, uint8ArrayToBigInt, sha512HMAC, hexToArray, uint8ArrayToHex, hexToUint8Array, formatToByteLength, bigintToHex }

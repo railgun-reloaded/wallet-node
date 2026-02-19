@@ -2,8 +2,8 @@ import { stringify } from '@railgun-reloaded/0zk-addresses'
 import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
-import { RailgunWallet } from '../src/wallet-node/railgun'
-import { WalletNode } from '../src/wallet-node/wallet-node'
+import { RailgunWallet } from '../src/wallet/railgun-wallet'
+import { WalletNode } from '../src/wallet/wallet-node'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 const TEST_MNEMONIC_2 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'

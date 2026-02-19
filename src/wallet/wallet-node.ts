@@ -1,8 +1,8 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
+import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../bip32'
 import { getPublicSpendingKey, getPublicViewingKey } from '../keys'
-import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../seed/bip32'
-import { Mnemonic } from '../seed/bip39'
+import { Mnemonic } from '../mnemonic'
 import type { KeyNode, SpendingKeyPair, ViewingKeyPair } from '../types'
 
 const HARDENED_OFFSET = 0x80000000

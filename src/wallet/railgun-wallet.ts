@@ -1,4 +1,4 @@
-import { deriveNodes } from '../index'
+import { deriveNodes } from '../derivation'
 import type {
   SpendingKeyPair,
   SpendingPublicKey,

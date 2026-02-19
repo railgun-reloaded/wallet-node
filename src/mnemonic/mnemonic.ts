@@ -9,17 +9,6 @@ import {
 import { wordlist } from '@scure/bip39/wordlists/english'
 
 /**
- * Generates a hierarchical deterministic (HD) wallet path based on the specified index.
- * The path follows the BIP-44 standard for Ethereum wallets:
- * `m/44'/60'/0'/0/{index}`
- * @param index - The index of the address to derive. Defaults to `0` if not specified.
- * @returns The HD wallet path as a string.
- */
-const getPath = (index = 0) => {
-  return `m/44'/60'/0'/0/${index}`
-}
-
-/**
  * The `Mnemonic` class provides utility methods for working with BIP-39 mnemonic phrases.
  * It includes functionality for generating, validating, and converting mnemonic phrases
  * to entropy, seeds, and private keys. This class leverages the BIP-39 standard for secure
@@ -98,6 +87,17 @@ export class Mnemonic {
   }
 
   /**
+   * Generates a hierarchical deterministic (HD) wallet path based on the specified index.
+   * The path follows the BIP-44 standard for Ethereum wallets:
+   * `m/44'/60'/0'/0/{index}`
+   * @param index - The index of the address to derive. Defaults to `0` if not specified.
+   * @returns The HD wallet path as a string.
+   */
+  static #getPath (index = 0): string {
+    return `m/44'/60'/0'/0/${index}`
+  }
+
+  /**
    * Converts a mnemonic phrase into a private key in the form of a `Uint8Array`.
    * @param mnemonic - The BIP-39 mnemonic phrase used to generate the seed.
    * @param derivationIndex - (Optional) The index used for deriving the key from the hierarchical deterministic (HD) path.
@@ -109,7 +109,7 @@ export class Mnemonic {
     derivationIndex?: number
   ): Uint8Array {
     const seed = mnemonicToSeedSync(mnemonic)
-    const path = getPath(derivationIndex)
+    const path = this.#getPath(derivationIndex)
     const node = HDKey.fromMasterSeed(seed).derive(path)
     const privateKey = node.privateKey as Uint8Array
     return privateKey
