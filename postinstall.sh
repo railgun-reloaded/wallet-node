@@ -6,4 +6,8 @@ cd ./node_modules/@railgun-reloaded/cryptography \
   && cd ../../.. \
   && cd ./node_modules/@railgun-reloaded/0zk-addresses \
   && npm install \
+  && npm run build \
+  && cd ../../.. \
+  && cd ./node_modules/@railgun-reloaded/scanner \
+  && npm install \
   && npm run build
