@@ -1,7 +1,7 @@
 import type { CiphertextCTR } from '@railgun-reloaded/cryptography'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToHex } from '../hash'
+import { uint8ArrayToHex } from '../encoding'
 
 import type { NoteAnnotationData } from './definitions'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from './definitions'

@@ -8,28 +8,22 @@ import {
   hexToUint8Array,
   uint8ArrayToBigInt,
   uint8ArrayToHex,
-} from '../src/hash'
+} from '../src/encoding'
 import {
   getNoteBlindingKeys,
   getPublicViewingKey,
   getSharedSymmetricKey,
   initializeCryptographyLibs,
 } from '../src/keys'
-import { formatCommitmentCiphertext } from '../src/notes/commitment'
 import {
   decryptCommitment,
   decryptCommitmentAsReceiverOrSender,
-} from '../src/notes/decrypt-commitment'
+  formatCommitmentCiphertext,
+} from '../src/notes/commitment'
 import type { CommitmentCiphertextStruct, TokenDataGetter } from '../src/notes/definitions'
 import { ChainType, OutputType, TXIDVersion } from '../src/notes/definitions'
 import { Memo } from '../src/notes/memo'
-import {
-  assertValidNoteRandom,
-  ciphertextToEncryptedRandomData,
-  encryptedDataToCiphertext,
-  getNoteHash,
-  isLegacyTransactNote,
-} from '../src/notes/note-utils'
+import { Note } from '../src/notes/note'
 import { ShieldNote } from '../src/notes/shield-note'
 import {
   assertValidNoteToken,
@@ -319,31 +313,31 @@ test('token-utils - assertValidNoteToken invalid token type', (t) => {
   }, 'should throw for invalid token type')
 })
 
-test('note-utils - assertValidNoteRandom valid', (t) => {
+test('Note.assertValidRandom valid', (t) => {
   t.execution(() => {
-    assertValidNoteRandom(TEST_RANDOM)
+    Note.assertValidRandom(TEST_RANDOM)
   }, 'should not throw for valid random')
 
   t.execution(() => {
-    assertValidNoteRandom('0x' + TEST_RANDOM)
+    Note.assertValidRandom('0x' + TEST_RANDOM)
   }, 'should not throw for valid random with 0x prefix')
 })
 
-test('note-utils - assertValidNoteRandom invalid length', (t) => {
+test('Note.assertValidRandom invalid length', (t) => {
   t.exception(() => {
-    assertValidNoteRandom('0x12345678')
+    Note.assertValidRandom('0x12345678')
   }, 'should throw for short random')
 
   t.exception(() => {
-    assertValidNoteRandom('0x' + '12'.repeat(100))
+    Note.assertValidRandom('0x' + '12'.repeat(100))
   }, 'should throw for long random')
 })
 
-test('note-utils - getNoteHash known vector and properties', async (t) => {
+test('Note.getHash - known vector and properties', async (t) => {
   const npkBytes = hexToUint8Array(TEST_NPK)
   const tokenHashBytes = hexToUint8Array(computeTokenHash(ERC20_TOKEN_DATA))
 
-  const hash1 = getNoteHash(npkBytes, tokenHashBytes, BigInt('1000000000000000000'))
+  const hash1 = Note.getHash(npkBytes, tokenHashBytes, BigInt('1000000000000000000'))
   t.is(
     uint8ArrayToBigInt(hash1),
     7822264150748016131168246751038092891550418438611309934403065338118898163274n,
@@ -351,12 +345,12 @@ test('note-utils - getNoteHash known vector and properties', async (t) => {
   )
 
   // Different value produces different hash
-  const hash2 = getNoteHash(npkBytes, tokenHashBytes, BigInt('2000000000000000000'))
+  const hash2 = Note.getHash(npkBytes, tokenHashBytes, BigInt('2000000000000000000'))
   t.not(uint8ArrayToHex(hash1), uint8ArrayToHex(hash2), 'different values should produce different hashes')
 
   // Different address produces different hash
   const address2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-  const hash3 = getNoteHash(hexToUint8Array(address2), tokenHashBytes, BigInt('1000000000000000000'))
+  const hash3 = Note.getHash(hexToUint8Array(address2), tokenHashBytes, BigInt('1000000000000000000'))
   t.not(uint8ArrayToHex(hash1), uint8ArrayToHex(hash3), 'different addresses should produce different hashes')
 })
 
@@ -820,7 +814,7 @@ test('transact-note - fromCommitment', async (t) => {
   t.is(transactNote.value, TEST_VALUE, 'should set value')
   t.is(transactNote.random, TEST_RANDOM, 'should set random')
   t.is(transactNote.notePublicKey, TEST_NPK, 'should set npk')
-  // The hash should be computed via getNoteHash
+  // The hash should be computed via Note.getHash
   t.is(typeof transactNote.hash, 'bigint', 'should compute hash as bigint')
   t.ok(transactNote.hash > 0n, 'hash should be positive')
 })
@@ -852,30 +846,30 @@ test('transact-note - fromCommitment with senderAddressData', async (t) => {
   )
 })
 
-test('transact-note - isLegacyTransactNote', (t) => {
+test('TransactNote.isLegacy', (t) => {
   t.is(
-    isLegacyTransactNote({ encryptedRandom: ['abc', 'def'] }),
+    TransactNote.isLegacy({ encryptedRandom: ['abc', 'def'] }),
     true,
     'should detect legacy format with encryptedRandom'
   )
 
   t.is(
-    isLegacyTransactNote({ random: 'abc123' }),
+    TransactNote.isLegacy({ random: 'abc123' }),
     false,
     'should detect modern format without encryptedRandom'
   )
 
-  t.is(isLegacyTransactNote({}), false, 'should return false for empty object')
+  t.is(TransactNote.isLegacy({}), false, 'should return false for empty object')
 })
 
-test('transact-note - ciphertextToEncryptedRandomData', (t) => {
+test('TransactNote.ciphertextToEncryptedRandomData', (t) => {
   const ciphertext = {
     iv: 'aabbccdd11223344',
     tag: 'eeff00112233aabb',
     data: ['deadbeef12345678'],
   }
 
-  const result = ciphertextToEncryptedRandomData(ciphertext)
+  const result = TransactNote.ciphertextToEncryptedRandomData(ciphertext)
 
   t.is(
     result[0],
@@ -885,14 +879,14 @@ test('transact-note - ciphertextToEncryptedRandomData', (t) => {
   t.is(result[1], 'deadbeef12345678', 'data should be first element')
 })
 
-test('transact-note - ciphertextToEncryptedRandomData empty data', (t) => {
+test('TransactNote.ciphertextToEncryptedRandomData empty data', (t) => {
   const ciphertext = {
     iv: 'aabbccdd11223344',
     tag: 'eeff00112233aabb',
     data: [] as string[],
   }
 
-  const result = ciphertextToEncryptedRandomData(ciphertext)
+  const result = TransactNote.ciphertextToEncryptedRandomData(ciphertext)
 
   t.is(
     result[0],
@@ -902,14 +896,14 @@ test('transact-note - ciphertextToEncryptedRandomData empty data', (t) => {
   t.is(result[1], '', 'data should be empty string when no data')
 })
 
-test('transact-note - encryptedDataToCiphertext', (t) => {
+test('TransactNote.encryptedDataToCiphertext', (t) => {
   // ivTag is 32 chars, so slice(0,32) gets full ivTag as iv, slice(32) gets empty tag
   const encryptedData: [string, string] = [
     'aabbccdd11223344eeff00112233aabb',
     'deadbeef12345678',
   ]
 
-  const result = encryptedDataToCiphertext(encryptedData)
+  const result = TransactNote.encryptedDataToCiphertext(encryptedData)
 
   // With 32-char ivTag: iv = slice(0,32), tag = slice(32) = ''
   t.is(
@@ -921,15 +915,15 @@ test('transact-note - encryptedDataToCiphertext', (t) => {
   t.is(result.data[0], 'deadbeef12345678', 'data should be preserved')
 })
 
-test('transact-note - ciphertextToEncryptedRandomData / encryptedDataToCiphertext roundtrip', (t) => {
+test('TransactNote.ciphertextToEncryptedRandomData / encryptedDataToCiphertext roundtrip', (t) => {
   const originalCiphertext = {
     iv: 'aabbccdd11223344aabbccdd11223344',
     tag: 'eeff00112233aabbeeff00112233aabb',
     data: ['deadbeef12345678deadbeef12345678'],
   }
 
-  const encrypted = ciphertextToEncryptedRandomData(originalCiphertext)
-  const restored = encryptedDataToCiphertext(encrypted)
+  const encrypted = TransactNote.ciphertextToEncryptedRandomData(originalCiphertext)
+  const restored = TransactNote.encryptedDataToCiphertext(encrypted)
 
   t.is(restored.iv, originalCiphertext.iv, 'iv should roundtrip')
   t.is(restored.tag, originalCiphertext.tag, 'tag should roundtrip')

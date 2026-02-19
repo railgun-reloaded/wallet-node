@@ -1,10 +1,9 @@
 import { decode, encode } from '@msgpack/msgpack'
 
-import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
+import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import type { TokenData, TokenType, Unshield } from './definitions'
 import { Note } from './note'
-import { getNoteHash } from './note-utils'
 import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils'
 
 /**
@@ -135,7 +134,7 @@ class UnshieldNote extends Note {
 
     const toAddress = uint8ArrayToHex(to)
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(getNoteHash(to, tokenHashBytes, amount + fee))
+    const hash = uint8ArrayToBigInt(Note.getHash(to, tokenHashBytes, amount + fee))
 
     return new UnshieldNote(
       toAddress,

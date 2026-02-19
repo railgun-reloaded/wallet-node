@@ -1,12 +1,11 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
+import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import { decodeAddress, encodeAddress } from './address-utils'
-import type { AddressData, Chain, Ciphertext, EncryptedData, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
+import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
 import { Note } from './note'
-import { getNoteHash } from './note-utils'
 import { computeTokenHash, getTokenDataERC20 } from './token-utils'
 
 /**
@@ -163,7 +162,7 @@ class TransactNote extends Note {
     const npkBytes = hexToUint8Array(data.npk)
     const tokenHashBytes = hexToUint8Array(data.tokenHash)
     const value = BigInt(data.value)
-    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, value))
+    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote(
       data.npk,
@@ -204,7 +203,7 @@ class TransactNote extends Note {
   ): TransactNote {
     const npkBytes = hexToUint8Array(npk)
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, value))
+    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote(
       npk,
@@ -278,7 +277,7 @@ class TransactNote extends Note {
 
     const npkBytes = hexToUint8Array(data.npk)
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, BigInt(data.value)))
+    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
 
     return new TransactNote(
       data.npk,
@@ -295,6 +294,40 @@ class TransactNote extends Note {
       undefined,
       data.blockNumber
     )
+  }
+
+  /**
+   * Checks if a serialized note is in legacy format.
+   * @param noteData - The serialized note data
+   * @returns True if legacy format, false otherwise
+   */
+  static isLegacy (noteData: any): boolean {
+    return 'encryptedRandom' in noteData
+  }
+
+  /**
+   * Converts ciphertext to encrypted random data format [ivTag, data].
+   * @param ciphertext - The ciphertext object
+   * @returns Tuple of [ivTag, data]
+   */
+  static ciphertextToEncryptedRandomData (ciphertext: LegacyCiphertext): EncryptedData {
+    const ivTag = ciphertext.iv + ciphertext.tag
+    const data = ciphertext.data[0] || ''
+    return [ivTag, data]
+  }
+
+  /**
+   * Converts encrypted random data format to ciphertext object.
+   * @param encryptedRandom - Tuple of [ivTag, data]
+   * @returns Ciphertext object
+   */
+  static encryptedDataToCiphertext (encryptedRandom: EncryptedData): LegacyCiphertext {
+    const [ivTag, data] = encryptedRandom
+    return {
+      iv: ivTag.slice(0, 32),
+      tag: ivTag.slice(32),
+      data: [data]
+    }
   }
 }
 

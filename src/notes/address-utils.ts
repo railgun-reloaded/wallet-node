@@ -1,6 +1,6 @@
 import { parse as parse0zkAddress, stringify as stringify0zkAddress } from '@railgun-reloaded/0zk-addresses'
 
-import { bigintToUint8Array, uint8ArrayToBigInt } from '../hash'
+import { bigintToUint8Array, uint8ArrayToBigInt } from '../encoding'
 
 import type { AddressData } from './definitions'
 
@@ -23,8 +23,8 @@ function to0zkAddressData (addressData: AddressData) {
  */
 function from0zkAddressData (parsed: ReturnType<typeof parse0zkAddress>): AddressData {
   return {
-    masterPublicKey: uint8ArrayToBigInt(new Uint8Array(parsed.masterPublicKey)),
-    viewingPublicKey: new Uint8Array(parsed.viewingPublicKey),
+    masterPublicKey: uint8ArrayToBigInt(parsed.masterPublicKey),
+    viewingPublicKey: parsed.viewingPublicKey,
   }
 }
 

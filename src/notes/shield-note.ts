@@ -1,7 +1,7 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToHex } from '../hash'
+import { uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
 import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'

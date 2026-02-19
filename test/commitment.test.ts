@@ -1,6 +1,6 @@
 import { test } from 'brittle'
 
-import { uint8ArrayToHex } from '../src/hash'
+import { uint8ArrayToHex } from '../src/encoding'
 import { formatCommitmentCiphertext } from '../src/notes/commitment'
 import type { CommitmentCiphertextStruct } from '../src/notes/definitions'
 

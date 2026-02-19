@@ -1,6 +1,6 @@
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3'
 
-import { bigintToUint8Array, hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
+import { bigintToHex, bigintToUint8Array, formatToByteLength, hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import type { TokenData } from './definitions'
 import { SNARK_PRIME } from './definitions'
@@ -96,29 +96,15 @@ const TOKEN_SUB_ID_NULL = '0x00'
 
 /**
  * Normalizes a hex string to a fixed byte length with 0x prefix.
- * Strips 0x prefix, left-pads with zeros, then trims from the left to the target length.
+ * Left-pads with zeros, then trims from the left to the target length
+ * (keeps the least-significant bytes).
  * @param hex - Input hex string (with or without 0x prefix)
  * @param byteLength - Target length in bytes
  * @returns Normalized hex string with 0x prefix
  */
 function formatHexToByteLength (hex: string, byteLength: number): string {
-  const clean = hex.startsWith('0x') ? hex.slice(2) : hex
-  const charLength = byteLength * 2
-  const padded = clean.padStart(charLength, '0')
-  // Trim from the left to target length (keeps the least-significant bytes)
-  return '0x' + padded.slice(padded.length - charLength)
-}
-
-/**
- * Converts a bigint to a 0x-prefixed hex string of a fixed byte length.
- * @param value - The bigint value
- * @param byteLength - Target length in bytes
- * @returns Hex string with 0x prefix, zero-padded to the specified length
- */
-function bigintToHex (value: bigint, byteLength: number): string {
-  const hex = value.toString(16)
-  const charLength = byteLength * 2
-  return '0x' + hex.padStart(charLength, '0')
+  const padded = formatToByteLength(hex, byteLength)
+  return '0x' + padded.slice(-byteLength * 2)
 }
 
 /**

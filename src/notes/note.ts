@@ -1,5 +1,8 @@
+import { poseidon } from '@railgun-reloaded/cryptography'
+
+import { bigintToUint8Array } from '../encoding'
+
 import type { TokenData } from './definitions'
-import { assertValidNoteRandom } from './note-utils'
 import { assertValidNoteToken, computeTokenHash } from './token-utils'
 
 /**
@@ -45,13 +48,40 @@ abstract class Note {
     tokenData: TokenData,
     random: string
   ) {
-    assertValidNoteRandom(random)
+    Note.assertValidRandom(random)
     assertValidNoteToken(tokenData, value)
     this.notePublicKey = notePublicKey
     this.value = value
     this.tokenData = tokenData
     this.tokenHash = computeTokenHash(tokenData)
     this.random = random
+  }
+
+  /**
+   * Validates that random value is the correct length (16 bytes).
+   * @param random - The random value to validate (hex string)
+   * @throws {Error} If validation fails
+   */
+  static assertValidRandom (random: string): void {
+    const cleanRandom = random.startsWith('0x') ? random.slice(2) : random
+
+    if (cleanRandom.length !== 32) {
+      throw new Error(
+        `Random must be length 32 hex chars (16 bytes). Got ${random}.`
+      )
+    }
+  }
+
+  /**
+   * Computes the note hash from npk, token hash, and value.
+   * @param npk - The note public key as a Uint8Array
+   * @param tokenHash - The token hash as a Uint8Array
+   * @param value - The note value as a bigint
+   * @returns The note hash as a Uint8Array
+   */
+  static getHash (npk: Uint8Array, tokenHash: Uint8Array, value: bigint): Uint8Array {
+    const valueBytes = bigintToUint8Array(value, 16) // 128-bit value
+    return poseidon([npk, tokenHash, valueBytes])
   }
 
   /**
