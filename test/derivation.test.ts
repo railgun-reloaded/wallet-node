@@ -54,10 +54,9 @@ test('derive - deriveNodes with custom index', async (t) => {
 })
 
 test('derive - deriveNodes with different mnemonics', async (t) => {
-  const mnemonic1 = 'test test test test test test test test test test test junk'
   const mnemonic2 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 
-  const nodes1 = deriveNodes(mnemonic1, 0)
+  const nodes1 = deriveNodes(TEST_MNEMONIC, 0)
   const nodes2 = deriveNodes(mnemonic2, 0)
 
   const spendingKey1 = nodes1.spending.getSpendingKeyPair()

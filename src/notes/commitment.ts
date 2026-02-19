@@ -143,8 +143,7 @@ async function decryptCommitmentAsReceiverOrSender (
   let senderData: DecryptedCommitmentData | null = null
 
   // ECDH: to derive the shared key, combine your private key with the OTHER
-  // party's blinded public key. The receiver uses the sender's blinded key
-  // and vice versa.
+  // party's blinded public key. The receiver uses the sender's blinded key and vice versa.
   if (blindedSenderViewingKey.length > 0) {
     receiverData = await decryptCommitment(
       txidVersion,
