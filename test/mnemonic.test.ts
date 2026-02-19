@@ -1,7 +1,7 @@
 import { test } from 'brittle'
 
-import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/bip32'
 import { Mnemonic } from '../src/mnemonic'
+import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32'
 
 test('bip39 - Mnemonic.generate', (t) => {
   const mnemonic128 = Mnemonic.generate(128)

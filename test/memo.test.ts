@@ -1,3 +1,4 @@
+import { randomBytes } from '@noble/hashes/utils'
 import { test } from 'brittle'
 
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions'
@@ -95,4 +96,21 @@ test('memo - decryptSenderRandom returns null constant on failure', (t) => {
 
   const result = Memo.decryptSenderRandom(encrypted, wrongKey)
   t.is(result, MEMO_SENDER_RANDOM_NULL, 'Should return MEMO_SENDER_RANDOM_NULL on failure')
+})
+
+test('memo - annotation data roundtrip for all output types', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const senderRandom = '112233445566778899aabbccddeeff' // 15 bytes = 30 hex chars
+
+  for (const outputType of [OutputType.Transfer, OutputType.BroadcasterFee, OutputType.Change]) {
+    const encrypted = Memo.encryptAnnotationData(
+      outputType,
+      senderRandom,
+      'test',
+      viewingPrivateKey
+    )
+    const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
+    t.ok(decrypted !== undefined, `should decrypt outputType ${outputType}`)
+    t.is(decrypted!.outputType, outputType, `should recover outputType ${outputType}`)
+  }
 })
