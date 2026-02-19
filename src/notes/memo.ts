@@ -17,9 +17,10 @@ class Memo {
    * @returns Uint8Array of the UTF-8 encoded text (empty array if undefined)
    */
   static encodeMemoText (memoText: string | undefined): Uint8Array {
-    if (memoText == null) {
+    if (memoText === undefined) {
       return new Uint8Array(0)
     }
+
     return new TextEncoder().encode(memoText)
   }
 
@@ -62,7 +63,7 @@ class Memo {
 
     const senderRandomClean = senderRandom.startsWith('0x') ? senderRandom.slice(2) : senderRandom
     if (senderRandomClean.length !== 30) {
-      throw new Error('senderRandom must be 15 bytes (30 hex chars)')
+      throw new Error(`senderRandom must be 15 bytes (30 hex chars), got ${senderRandomClean.length}`)
     }
 
     for (let i = 0; i < 15; i++) {
@@ -124,12 +125,19 @@ class Memo {
       const ciphertext: CiphertextCTR = { iv, data: dataBlocks }
       const decrypted = AES.decryptCTR(ciphertext, viewingPrivateKey)
 
-      const block0 = decrypted[0]!
-      const outputType = block0[0]!
-      const senderRandom = uint8ArrayToHex(block0.slice(1, 16), false)
+      const block0 = decrypted[0]
+      if (!block0 || block0.length < 16) {
+        return undefined
+      }
 
+      const outputType = block0[0]!
       if (!Object.values(OutputType).includes(outputType)) {
-        throw new Error('Invalid outputType in annotation data')
+        return undefined
+      }
+
+      const senderRandom = uint8ArrayToHex(block0.slice(1, 16), false)
+      if (senderRandom.length !== 30) {
+        return undefined
       }
 
       let walletSource: string | undefined

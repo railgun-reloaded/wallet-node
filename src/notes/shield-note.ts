@@ -1,7 +1,7 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
+import { uint8ArrayToHex } from '../hash'
 import { getSharedSymmetricKey } from '../keys'
 
 import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
@@ -101,14 +101,18 @@ class ShieldNote extends Note {
    * Creates a ShieldNote from a ShieldCommitment (V2+).
    * The random is encrypted in encryptedBundle and must be decrypted
    * using ECDH(viewingPrivateKey, shieldKey).
+   * NOTE: shieldKey is the shielder's public viewing key (used only for ECDH),
+   * NOT the master public key.
    * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
    * @param commitment - The ShieldCommitment object
    * @param viewingPrivateKey - The wallet's viewing private key for ECDH decryption
+   * @param masterPublicKey - The wallet's master public key
    * @returns A new ShieldNote instance, or null if decryption fails (not addressed to this wallet)
    */
   static async fromShieldCommitment (
     commitment: ShieldCommitment,
-    viewingPrivateKey: Uint8Array
+    viewingPrivateKey: Uint8Array,
+    masterPublicKey: bigint
   ): Promise<ShieldNote | null> {
     if (!commitment.encryptedBundle || commitment.encryptedBundle.length < 3) {
       throw new Error('Invalid encryptedBundle in ShieldCommitment')
@@ -130,9 +134,8 @@ class ShieldNote extends Note {
 
       // First 16 bytes of first decrypted block is the random
       const randomBytes = decrypted[0]!.slice(0, 16)
-      const mpk = uint8ArrayToBigInt(commitment.shieldKey)
 
-      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), mpk)
+      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
     } catch {
       // Decryption failed — commitment not addressed to this wallet
       return null

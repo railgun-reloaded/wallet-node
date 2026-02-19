@@ -1,11 +1,11 @@
 import { decode, encode } from '@msgpack/msgpack'
 
-import { uint8ArrayToHex } from '../hash'
+import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
 
-import type { TokenData, TokenType, UnshieldData } from './definitions'
+import type { TokenData, TokenType, Unshield } from './definitions'
 import { Note } from './note'
 import { getNoteHash } from './note-utils'
-import { deserializeTokenData, serializeTokenData } from './token-utils'
+import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils'
 
 /**
  * Represents an Unshield note for converting private RAILGUN notes back into public assets.
@@ -99,6 +99,7 @@ class UnshieldNote extends Note {
 
   /**
    * Creates an UnshieldNote from unshield data.
+   * The note hash is computed from amount + fee combined, matching the engine's behavior.
    * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
    * @param unshield - The Unshield object
    * @param random - Random value (16 bytes hex string)
@@ -106,10 +107,10 @@ class UnshieldNote extends Note {
    * @throws {Error} If required fields are missing or poseidon is not initialized
    */
   static fromUnshield (
-    unshield: UnshieldData,
+    unshield: Unshield,
     random: string
   ): UnshieldNote {
-    const { to, token: { tokenAddress, tokenSubID, tokenType }, amount } = unshield
+    const { to, token: { tokenAddress, tokenSubID, tokenType }, amount, fee } = unshield
 
     let tokenTypeNum: TokenType
     switch (tokenType.toUpperCase()) {
@@ -133,7 +134,8 @@ class UnshieldNote extends Note {
     )
 
     const toAddress = uint8ArrayToHex(to)
-    const hash = getNoteHash(toAddress, tokenData, amount)
+    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
+    const hash = uint8ArrayToBigInt(getNoteHash(to, tokenHashBytes, amount + fee))
 
     return new UnshieldNote(
       toAddress,
@@ -144,6 +146,22 @@ class UnshieldNote extends Note {
       hash,
       false // Default value
     )
+  }
+
+  /**
+   * Computes the amount and fee from a total value and fee basis points.
+   * @param value - The total value (amount + fee)
+   * @param feeBasisPoints - The fee in basis points (e.g. 25 = 0.25%)
+   * @returns The amount and fee
+   */
+  static getAmountFeeFromValue (
+    value: bigint,
+    feeBasisPoints: bigint
+  ): { amount: bigint, fee: bigint } {
+    const BASIS_POINTS = 10000n
+    const fee = (value * feeBasisPoints) / BASIS_POINTS
+    const amount = value - fee
+    return { amount, fee }
   }
 }
 

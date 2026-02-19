@@ -1,3 +1,5 @@
+import type { Ciphertext } from '@railgun-reloaded/cryptography'
+
 /**
  * SNARK scalar field prime used in RAILGUN's zero-knowledge proofs.
  * This is the maximum value for field elements in the BN254 curve.
@@ -8,77 +10,6 @@ const SNARK_PRIME = 218882428718392752222464057452572750885483644004160343436982
  * Standard value for ERC721 notes - always 1 since NFTs are non-fungible.
  */
 const ERC721_NOTE_VALUE = 1n as const
-
-type GeneratedCommitment = {
-  hash: Uint8Array;
-  treeNumber: number;
-  treePosition: number;
-  preimage: {
-    npk: Uint8Array;
-    value: bigint;
-    token: {
-      tokenAddress: Uint8Array;
-      tokenType: string;
-      tokenSubID: Uint8Array;
-    };
-  };
-  encryptedRandom: Uint8Array[];
-}
-
-type ShieldCommitment = {
-  hash: Uint8Array;
-  treeNumber: number;
-  treePosition: number;
-  preimage: {
-    npk: Uint8Array;
-    value: bigint;
-    token: {
-      tokenAddress: Uint8Array;
-      tokenType: string;
-      tokenSubID: Uint8Array;
-    };
-  };
-  encryptedBundle: Uint8Array[];
-  shieldKey: Uint8Array;
-  fee?: bigint;
-}
-
-type UnshieldData = {
-  to: Uint8Array;
-  token: {
-    tokenAddress: Uint8Array;
-    tokenType: string;
-    tokenSubID: Uint8Array;
-  };
-  amount: bigint;
-  fee: bigint;
-}
-
-type Ciphertext = {
-  iv: Uint8Array;
-  tag: Uint8Array;
-  data: Uint8Array[];
-}
-
-type TransactCommitment = {
-  hash: Uint8Array;
-  ciphertext: Ciphertext;
-  blindedSenderViewingKey: Uint8Array;
-  blindedReceiverViewingKey: Uint8Array;
-  annotationData: Uint8Array;
-  memo: Uint8Array[];
-  treeNumber: number;
-  treePosition: number;
-}
-
-type EncryptedCommitment = {
-  hash: Uint8Array;
-  ciphertext: Ciphertext;
-  memo: Uint8Array[];
-  ephemeralKeys: Uint8Array[];
-  treeNumber: number;
-  treePosition: number;
-}
 
 enum TokenType {
   ERC20 = 0,
@@ -96,6 +27,11 @@ type TokenData = {
   tokenType: TokenType;
   tokenAddress: string;
   tokenSubID: string;
+}
+
+enum TXIDVersion {
+  V2_PoseidonMerkle = 'V2_PoseidonMerkle',
+  V3_PoseidonMerkle = 'V3_PoseidonMerkle',
 }
 
 enum ChainType {
@@ -143,40 +79,6 @@ type NoteAnnotationData = {
 }
 
 /**
- * Base interface for all note types, containing common properties.
- */
-interface NoteBase {
-  notePublicKey: string;
-  random: string;
-  value: bigint;
-  tokenData: TokenData;
-}
-
-interface ShieldNote extends NoteBase {
-  masterPublicKey: bigint;
-  tokenHash: string;
-}
-
-interface TransactNote extends NoteBase {
-  receiverAddressData: AddressData;
-  senderAddressData: AddressData | undefined;
-  tokenHash: string;
-  hash: bigint;
-  outputType: OutputType | undefined;
-  walletSource: string | undefined;
-  senderRandom: string | undefined;
-  memoText: string | undefined;
-  shieldFee: string | undefined;
-  blockNumber: number | undefined;
-}
-
-interface UnshieldNote extends NoteBase {
-  toAddress: string;
-  hash: bigint;
-  allowOverride: boolean;
-}
-
-/**
  * Legacy serialized transact note format.
  * Used for backward compatibility with older database entries.
  * DO NOT MODIFY - This format is stored in databases.
@@ -217,5 +119,39 @@ interface TransactNoteSerialized {
  */
 const MEMO_SENDER_RANDOM_NULL = '000000000000000000000000000000'
 
-export type { TokenData, Chain, AddressData, NoteCiphertext, LegacyCiphertext, EncryptedData, NoteAnnotationData, NoteBase, ShieldNote, TransactNote, LegacyTransactNoteSerialized, TransactNoteSerialized, UnshieldNote, GeneratedCommitment, ShieldCommitment, UnshieldData, Ciphertext, TransactCommitment, EncryptedCommitment }
-export { TokenType, OutputType, ChainType, SNARK_PRIME, ERC721_NOTE_VALUE, MEMO_SENDER_RANDOM_NULL }
+/**
+ * Interface for resolving a token hash to full token data.
+ * Matches the engine's TokenDataGetter pattern.
+ */
+interface TokenDataGetter {
+  getTokenDataFromHash (txidVersion: TXIDVersion, chain: Chain, tokenHash: string): Promise<TokenData>
+}
+
+/**
+ * Raw commitment ciphertext as received from on-chain events.
+ * Matches the format in TransactionStructV2.boundParams.commitmentCiphertext[].
+ */
+type CommitmentCiphertextStruct = {
+  ciphertext: string[]
+  blindedSenderViewingKey: string
+  blindedReceiverViewingKey: string
+  annotationData: string
+  memo: string
+}
+
+/**
+ * Formatted commitment ciphertext with parsed Uint8Array fields,
+ * ready for use by decryptCommitment.
+ */
+type FormattedCommitmentCiphertext = {
+  ciphertext: Ciphertext
+  blindedSenderViewingKey: Uint8Array
+  blindedReceiverViewingKey: Uint8Array
+  annotationData: Uint8Array
+  memo: Uint8Array
+}
+
+export type { Ciphertext } from '@railgun-reloaded/cryptography'
+export type { EncryptedCommitment, GeneratedCommitment, ShieldCommitment, TransactCommitment, Unshield } from '@railgun-reloaded/scanner'
+export type { TokenData, Chain, AddressData, NoteCiphertext, LegacyCiphertext, EncryptedData, NoteAnnotationData, LegacyTransactNoteSerialized, TransactNoteSerialized, TokenDataGetter, CommitmentCiphertextStruct, FormattedCommitmentCiphertext }
+export { TokenType, OutputType, TXIDVersion, ChainType, SNARK_PRIME, ERC721_NOTE_VALUE, MEMO_SENDER_RANDOM_NULL }

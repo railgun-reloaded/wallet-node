@@ -1,13 +1,13 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { hexToUint8Array, uint8ArrayToHex } from '../hash'
-import { getSharedSymmetricKey } from '../keys'
+import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../hash'
 
-import type { AddressData, Ciphertext, EncryptedData, LegacyCiphertext, TokenData } from './definitions'
+import { decodeAddress, encodeAddress } from './address-utils'
+import type { AddressData, Chain, Ciphertext, EncryptedData, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
 import { Note } from './note'
 import { getNoteHash } from './note-utils'
-import { deserializeTokenData } from './token-utils'
+import { computeTokenHash, getTokenDataERC20 } from './token-utils'
 
 /**
  * Represents a Transact note for private-to-private transfers.
@@ -17,7 +17,7 @@ import { deserializeTokenData } from './token-utils'
  * Extends {@link Note} with transaction-specific fields.
  *
  * Supports both a modern msgpack serialization format and a legacy format that encrypts the
- * random value with AES-GCM via a shared symmetric key (see {@link TransactNote.serializeLegacy}).
+ * random value with AES-GCM using the viewing private key directly (see {@link TransactNote.serializeLegacy}).
  *
  * Can be created directly, deserialized from either format, or reconstructed from on-chain
  * commitment data ({@link TransactCommitment} or {@link EncryptedCommitment}).
@@ -113,69 +113,66 @@ class TransactNote extends Note {
 
   /**
    * Serializes the transact note to a Uint8Array using msgpack encoding.
+   * Output shape matches {@link TransactNoteSerialized}.
    * @returns The serialized transact note
    */
   serialize (): Uint8Array {
     return encode({
-      random: this.random,
-      tokenHash: this.tokenHash,
-      notePublicKey: this.notePublicKey,
+      npk: this.notePublicKey,
       value: this.value.toString(),
-      hash: this.hash.toString(),
+      tokenHash: this.tokenHash,
+      random: this.random,
+      recipientAddress: encodeAddress(this.receiverAddressData),
+      senderAddress: this.senderAddressData
+        ? encodeAddress(this.senderAddressData)
+        : undefined,
       outputType: this.outputType,
       walletSource: this.walletSource,
       senderRandom: this.senderRandom,
       memoText: this.memoText,
       shieldFee: this.shieldFee,
       blockNumber: this.blockNumber,
-      token: {
-        tokenAddress: this.tokenData.tokenAddress,
-        tokenType: this.tokenData.tokenType,
-        tokenSubID: this.tokenData.tokenSubID,
-      },
-      receiverAddressData: this.receiverAddressData
-        ? {
-            masterPublicKey: this.receiverAddressData.masterPublicKey.toString(),
-            viewingPublicKey: uint8ArrayToHex(this.receiverAddressData.viewingPublicKey),
-          }
-        : undefined,
-      senderAddressData: this.senderAddressData
-        ? {
-            masterPublicKey: this.senderAddressData.masterPublicKey.toString(),
-            viewingPublicKey: uint8ArrayToHex(this.senderAddressData.viewingPublicKey),
-          }
-        : undefined,
     })
   }
 
   /**
    * Deserializes a transact note from a Uint8Array.
+   * Resolves tokenHash to full TokenData via tokenDataGetter.
    * @param bytes - The serialized transact note data
+   * @param txidVersion - The TXID version
+   * @param chain - The chain this note belongs to
+   * @param tokenDataGetter - Resolves token hashes to full token data
    * @returns A new TransactNote instance
    */
-  static deserialize (bytes: Uint8Array): TransactNote {
+  static async deserialize (
+    bytes: Uint8Array,
+    txidVersion: TXIDVersion,
+    chain: Chain,
+    tokenDataGetter: TokenDataGetter
+  ): Promise<TransactNote> {
     const data = decode(bytes) as any
 
-    const receiverAddressData: AddressData = data.receiverAddressData
-      ? {
-          masterPublicKey: BigInt(data.receiverAddressData.masterPublicKey),
-          viewingPublicKey: hexToUint8Array(data.receiverAddressData.viewingPublicKey),
-        }
-      : { masterPublicKey: 0n, viewingPublicKey: new Uint8Array(32) }
+    const receiverAddressData = decodeAddress(data.recipientAddress)
+
+    const senderAddressData = data.senderAddress
+      ? decodeAddress(data.senderAddress)
+      : undefined
+
+    const tokenData = await tokenDataGetter.getTokenDataFromHash(txidVersion, chain, data.tokenHash)
+
+    const npkBytes = hexToUint8Array(data.npk)
+    const tokenHashBytes = hexToUint8Array(data.tokenHash)
+    const value = BigInt(data.value)
+    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote(
-      data.notePublicKey,
-      BigInt(data.value),
-      deserializeTokenData(data.token),
+      data.npk,
+      value,
+      tokenData,
       data.random,
-      BigInt(data.hash),
+      hash,
       receiverAddressData,
-      data.senderAddressData
-        ? {
-            masterPublicKey: BigInt(data.senderAddressData.masterPublicKey),
-            viewingPublicKey: hexToUint8Array(data.senderAddressData.viewingPublicKey),
-          }
-        : undefined,
+      senderAddressData,
       data.outputType,
       data.walletSource,
       data.senderRandom,
@@ -205,7 +202,9 @@ class TransactNote extends Note {
     receiverAddressData: AddressData,
     senderAddressData?: AddressData
   ): TransactNote {
-    const hash = getNoteHash(npk, tokenData, value)
+    const npkBytes = hexToUint8Array(npk)
+    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
+    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote(
       npk,
@@ -221,18 +220,14 @@ class TransactNote extends Note {
   /**
    * Serializes a transact note in legacy format (for backward compatibility).
    * Legacy format uses encrypted random field instead of plain random.
+   * The random is encrypted directly with the viewing private key (no ECDH).
+   * Output shape matches {@link LegacyTransactNoteSerialized}.
    * @param viewingPrivateKey - Viewing private key for encryption (32 bytes)
-   * @param receiverViewingPublicKey - Receiver's viewing public key for encryption (32 bytes)
    * @returns The serialized legacy transact note
    */
-  async serializeLegacy (viewingPrivateKey: Uint8Array, receiverViewingPublicKey: Uint8Array): Promise<Uint8Array> {
-    const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, receiverViewingPublicKey)
-    if (!sharedKey) {
-      throw new Error('Failed to generate shared symmetric key')
-    }
-
+  serializeLegacy (viewingPrivateKey: Uint8Array): Uint8Array {
     const randomBytes = hexToUint8Array(this.random)
-    const ciphertext = AES.encryptGCM([randomBytes], sharedKey)
+    const ciphertext = AES.encryptGCM([randomBytes], viewingPrivateKey)
 
     // Convert ciphertext to legacy format [ivTag, data]
     const ivTag = uint8ArrayToHex(ciphertext.iv, false) + uint8ArrayToHex(ciphertext.tag, false)
@@ -245,9 +240,7 @@ class TransactNote extends Note {
       tokenHash: this.tokenHash,
       encryptedRandom,
       memoField: [],
-      recipientAddress: this.receiverAddressData
-        ? uint8ArrayToHex(this.receiverAddressData.viewingPublicKey)
-        : '0x' + '00'.repeat(32),
+      recipientAddress: encodeAddress(this.receiverAddressData),
       memoText: this.memoText,
       blockNumber: this.blockNumber,
     })
@@ -255,23 +248,17 @@ class TransactNote extends Note {
 
   /**
    * Deserializes a legacy transact note.
+   * The random is decrypted directly with the viewing private key (no ECDH).
+   * Legacy notes are always ERC20.
    * @param bytes - The serialized legacy note data
    * @param viewingPrivateKey - Viewing private key for decryption (32 bytes)
-   * @param senderViewingPublicKey - Sender's viewing public key for decryption (32 bytes)
    * @returns A new TransactNote instance
    */
-  static async deserializeLegacy (
+  static deserializeLegacy (
     bytes: Uint8Array,
-    viewingPrivateKey: Uint8Array,
-    senderViewingPublicKey: Uint8Array
-  ): Promise<TransactNote> {
+    viewingPrivateKey: Uint8Array
+  ): TransactNote {
     const data = decode(bytes) as any
-
-    const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, senderViewingPublicKey)
-
-    if (!sharedKey) {
-      throw new Error('Failed to generate shared symmetric key')
-    }
 
     const encryptedData = data.encryptedRandom as EncryptedData
     const [ivTag, encryptedRandomData] = encryptedData
@@ -281,21 +268,17 @@ class TransactNote extends Note {
     const encData = hexToUint8Array('0x' + encryptedRandomData)
 
     const ciphertext: Ciphertext = { iv, tag, data: [encData] }
-    const decrypted = AES.decryptGCM(ciphertext, sharedKey)
+    const decrypted = AES.decryptGCM(ciphertext, viewingPrivateKey)
     const random = uint8ArrayToHex(decrypted[0] || new Uint8Array(16))
 
-    const tokenData: TokenData = {
-      tokenType: 0, // Legacy notes can only be ERC20
-      tokenAddress: data.tokenHash,
-      tokenSubID: '0x00'
-    }
+    // Legacy notes are always ERC20
+    const tokenData = getTokenDataERC20(data.tokenHash)
 
-    const receiverAddressData: AddressData = {
-      masterPublicKey: 0n,
-      viewingPublicKey: hexToUint8Array(data.recipientAddress)
-    }
+    const receiverAddressData = decodeAddress(data.recipientAddress)
 
-    const hash = getNoteHash(data.npk, tokenData, BigInt(data.value))
+    const npkBytes = hexToUint8Array(data.npk)
+    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
+    const hash = uint8ArrayToBigInt(getNoteHash(npkBytes, tokenHashBytes, BigInt(data.value)))
 
     return new TransactNote(
       data.npk,
@@ -315,43 +298,4 @@ class TransactNote extends Note {
   }
 }
 
-/**
- * Checks if a serialized note is in legacy format.
- * @param noteData - The serialized note data
- * @returns True if legacy format, false otherwise
- */
-function isLegacyTransactNote (noteData: any): boolean {
-  return 'encryptedRandom' in noteData
-}
-
-/**
- * Converts ciphertext to encrypted random data format [ivTag, data].
- * @param ciphertext - The ciphertext object
- * @returns Tuple of [ivTag, data]
- */
-function ciphertextToEncryptedRandomData (ciphertext: LegacyCiphertext): EncryptedData {
-  const ivTag = ciphertext.iv + ciphertext.tag
-  const data = ciphertext.data[0] || ''
-  return [ivTag, data]
-}
-
-/**
- * Converts encrypted random data format to ciphertext object.
- * @param encryptedRandom - Tuple of [ivTag, data]
- * @returns Ciphertext object
- */
-function encryptedDataToCiphertext (encryptedRandom: EncryptedData): LegacyCiphertext {
-  const [ivTag, data] = encryptedRandom
-  return {
-    iv: ivTag.slice(0, 32),
-    tag: ivTag.slice(32),
-    data: [data]
-  }
-}
-
-export {
-  TransactNote,
-  isLegacyTransactNote,
-  ciphertextToEncryptedRandomData,
-  encryptedDataToCiphertext
-}
+export { TransactNote }

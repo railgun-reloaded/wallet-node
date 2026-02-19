@@ -3,28 +3,42 @@ import { AES } from '@railgun-reloaded/cryptography'
 import { uint8ArrayToHex } from '../hash'
 import { getSharedSymmetricKey } from '../keys'
 
-import type { Ciphertext, TokenData } from './definitions'
-import { serializeTokenData } from './token-utils'
+import type { Chain, Ciphertext, TokenData, TokenDataGetter } from './definitions'
+import { TXIDVersion } from './definitions'
 
 interface DecryptedCommitmentData {
   random: string
-  npk: string
+  encodedMPK: string
   value: bigint
   tokenData: TokenData
 }
 
 /**
- * Attempts to decrypt a commitment ciphertext using a viewing key
+ * Attempts to decrypt a commitment ciphertext using a viewing key.
+ * The decrypted ciphertext is expected to contain at least 3 elements:
+ *   [0]: Encoded Master Public Key
+ *   [1]: Token hash
+ *   [2]: Random (16 bytes) + Value (16 bytes)
+ * @param txidVersion - The TXID version (V2 or V3)
+ * @param chain - The chain this commitment belongs to
  * @param ciphertext - The encrypted ciphertext from the commitment
  * @param blindedViewingKey - The blinded viewing key (sender or receiver)
  * @param viewingPrivateKey - The wallet's viewing private key
+ * @param tokenDataGetter - Resolves token hashes to full token data
  * @returns The decrypted data or null if decryption fails
  */
 async function decryptCommitment (
+  txidVersion: TXIDVersion,
+  chain: Chain,
   ciphertext: Ciphertext,
   blindedViewingKey: Uint8Array,
-  viewingPrivateKey: Uint8Array
+  viewingPrivateKey: Uint8Array,
+  tokenDataGetter: TokenDataGetter
 ): Promise<DecryptedCommitmentData | null> {
+  if (txidVersion !== TXIDVersion.V2_PoseidonMerkle) {
+    throw new Error(`Unsupported txidVersion: ${txidVersion}`)
+  }
+
   try {
     // Compute shared symmetric key using ECDH
     const sharedKey = await getSharedSymmetricKey(viewingPrivateKey, blindedViewingKey)
@@ -32,43 +46,34 @@ async function decryptCommitment (
       return null
     }
 
-    const decryptedCiphertext = AES.decryptGCM(ciphertext, sharedKey) // The decrypted data contains: [random (16 bytes), npk (32 bytes), value (32 bytes), tokenAddress (20 bytes), tokenType (1 byte), tokenSubID (32 bytes)]
+    const decryptedCiphertext = AES.decryptGCM(ciphertext, sharedKey)
 
-    const combinedData = decryptedCiphertext[0]
-    if (!combinedData || combinedData.length < 16 + 32 + 32 + 20 + 1 + 32) {
+    if (decryptedCiphertext.length < 3) {
       return null
     }
 
-    let offset = 0
+    const mpkBytes = decryptedCiphertext[0]
+    const tokenHashBytes = decryptedCiphertext[1]
+    const randomValueBytes = decryptedCiphertext[2]
 
-    const randomBytes = combinedData.slice(offset, offset + 16) // (16 bytes)
-    const random = uint8ArrayToHex(randomBytes)
-    offset += 16
-
-    const npkBytes = combinedData.slice(offset, offset + 32) // (32 bytes)
-    const npk = uint8ArrayToHex(npkBytes)
-    offset += 32
-
-    const valueBytes = combinedData.slice(offset, offset + 32) // (32 bytes as big-endian bigint)
-    let value = 0n
-    for (let i = 0; i < valueBytes.length; i++) {
-      value = (value << 8n) | BigInt(valueBytes[i] ?? 0)
+    if (!mpkBytes || !tokenHashBytes || !randomValueBytes || randomValueBytes.length < 32) {
+      return null
     }
-    offset += 32
 
-    const tokenAddressBytes = combinedData.slice(offset, offset + 20) // (20 bytes)
-    const tokenAddress = uint8ArrayToHex(tokenAddressBytes)
-    offset += 20
+    const encodedMPK = uint8ArrayToHex(mpkBytes)
+    const tokenHash = uint8ArrayToHex(tokenHashBytes)
+    const tokenData = await tokenDataGetter.getTokenDataFromHash(txidVersion, chain, tokenHash)
 
-    const tokenType = combinedData[offset] ?? 0 // (1 byte)
-    offset += 1
+    // decryptedCiphertext[2] contains: random (16 bytes) + value (16 bytes)
+    const random = uint8ArrayToHex(randomValueBytes.slice(0, 16))
 
-    const tokenSubIDBytes = combinedData.slice(offset, offset + 32) // (32 bytes)
-    const tokenSubID = uint8ArrayToHex(tokenSubIDBytes)
+    const valueSlice = randomValueBytes.slice(16, 32)
+    let value = 0n
+    for (let i = 0; i < valueSlice.length; i++) {
+      value = (value << 8n) | BigInt(valueSlice[i] ?? 0)
+    }
 
-    const tokenData = serializeTokenData(tokenAddress, tokenType, tokenSubID)
-
-    return { random, npk, value, tokenData }
+    return { random, encodedMPK, value, tokenData }
   } catch (error) {
     // Decryption failed - commitment not for this wallet
     return null
@@ -76,40 +81,56 @@ async function decryptCommitment (
 }
 
 /**
- * Attempts to decrypt a commitment as either receiver or sender
+ * Attempts to decrypt a commitment as both receiver and sender.
+ * The sender and receiver could be the same address, so we try decrypting
+ * with both keys even if the first one gives valid data.
+ * @param txidVersion - The TXID version (V2 or V3)
+ * @param chain - The chain this commitment belongs to
  * @param ciphertext - The encrypted ciphertext from the commitment
  * @param blindedReceiverViewingKey - The blinded receiver viewing key
  * @param blindedSenderViewingKey - The blinded sender viewing key
  * @param viewingPrivateKey - The wallet's viewing private key
- * @returns Object with decrypted data and role (receiver/sender), or null if decryption fails
+ * @param tokenDataGetter - Resolves token hashes to full token data
+ * @returns Object with receiver and sender decrypted data (either or both may be non-null)
  */
 async function decryptCommitmentAsReceiverOrSender (
+  txidVersion: TXIDVersion,
+  chain: Chain,
   ciphertext: Ciphertext,
   blindedReceiverViewingKey: Uint8Array,
   blindedSenderViewingKey: Uint8Array,
-  viewingPrivateKey: Uint8Array
-): Promise<{ data: DecryptedCommitmentData, isReceiver: boolean } | null> {
-  const receiverData = await decryptCommitment(
-    ciphertext,
-    blindedReceiverViewingKey,
-    viewingPrivateKey
-  )
+  viewingPrivateKey: Uint8Array,
+  tokenDataGetter: TokenDataGetter
+): Promise<{ receiverData: DecryptedCommitmentData | null, senderData: DecryptedCommitmentData | null }> {
+  let receiverData: DecryptedCommitmentData | null = null
+  let senderData: DecryptedCommitmentData | null = null
 
-  if (receiverData) {
-    return { data: receiverData, isReceiver: true }
+  // ECDH: to derive the shared key, combine your private key with the OTHER
+  // party's blinded public key. The receiver uses the sender's blinded key
+  // and vice versa.
+  if (blindedSenderViewingKey.length > 0) {
+    receiverData = await decryptCommitment(
+      txidVersion,
+      chain,
+      ciphertext,
+      blindedSenderViewingKey,
+      viewingPrivateKey,
+      tokenDataGetter
+    )
   }
 
-  const senderData = await decryptCommitment(
-    ciphertext,
-    blindedSenderViewingKey,
-    viewingPrivateKey
-  )
-
-  if (senderData) {
-    return { data: senderData, isReceiver: false }
+  if (blindedReceiverViewingKey.length > 0) {
+    senderData = await decryptCommitment(
+      txidVersion,
+      chain,
+      ciphertext,
+      blindedReceiverViewingKey,
+      viewingPrivateKey,
+      tokenDataGetter
+    )
   }
 
-  return null
+  return { receiverData, senderData }
 }
 
 export type { DecryptedCommitmentData }
