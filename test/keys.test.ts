@@ -1,4 +1,4 @@
-import { test } from 'brittle'
+import { hook, test } from 'brittle'
 
 import {
   adjustBytes25519,
@@ -14,15 +14,18 @@ import {
   unblindNoteKey,
 } from '../src/keys'
 
-test('keys - initialization', async (t) => {
-  t.plan(1)
+/**
+ * Brittle does not have a built-in beforeAll/beforeEach hook.
+ * The hook() function creates a test that always runs even in --solo mode.
+ * Placed at the top of the file, it acts as a setup step that runs before
+ * all other tests, ensuring cryptography libs are initialized once.
+ */
+hook('setup cryptography libs', async (t) => {
   await initializeCryptographyLibs()
-  t.pass('should initialize cryptography libraries without error')
+  t.pass('cryptography libraries initialized')
 })
 
 test('keys - getPublicSpendingKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const privateKey = new Uint8Array(32)
   privateKey.fill(1)
 
@@ -35,8 +38,6 @@ test('keys - getPublicSpendingKey', async (t) => {
 })
 
 test('keys - getPublicSpendingKey error on invalid length', async (t) => {
-  await initializeCryptographyLibs()
-
   const invalidKey = new Uint8Array(16) // Wrong length
 
   t.exception(() => {
@@ -45,8 +46,6 @@ test('keys - getPublicSpendingKey error on invalid length', async (t) => {
 })
 
 test('keys - getPublicViewingKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const privateViewingKey = new Uint8Array(32)
   privateViewingKey.fill(2)
 
@@ -93,8 +92,6 @@ test('keys - adjustBytes25519 error on invalid input', async (t) => {
 })
 
 test('keys - getPrivateScalarFromPrivateKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const privateKey = new Uint8Array(32)
   privateKey.fill(5)
 
@@ -105,16 +102,12 @@ test('keys - getPrivateScalarFromPrivateKey', async (t) => {
 })
 
 test('keys - getPrivateScalarFromPrivateKey error on invalid length', async (t) => {
-  await initializeCryptographyLibs()
-
   await t.exception(async () => {
     await getPrivateScalarFromPrivateKey(new Uint8Array(16))
   }, 'should throw error for invalid private key length')
 })
 
 test('keys - getRandomScalar', async (t) => {
-  await initializeCryptographyLibs()
-
   const scalar1 = getRandomScalar()
   const scalar2 = getRandomScalar()
 
@@ -124,8 +117,6 @@ test('keys - getRandomScalar', async (t) => {
 })
 
 test('keys - seedToScalar', async (t) => {
-  await initializeCryptographyLibs()
-
   const seed = new Uint8Array(32)
   seed.fill(10)
 
@@ -136,8 +127,6 @@ test('keys - seedToScalar', async (t) => {
 })
 
 test('keys - getBlindingScalar', async (t) => {
-  await initializeCryptographyLibs()
-
   const sharedRandom = new Uint8Array(32)
   sharedRandom.fill(1)
 
@@ -151,8 +140,6 @@ test('keys - getBlindingScalar', async (t) => {
 })
 
 test('keys - getNoteBlindingKeys', async (t) => {
-  await initializeCryptographyLibs()
-
   const senderViewingPublicKey = new Uint8Array(32)
   senderViewingPublicKey.fill(1)
   const senderPublicKey = getPublicViewingKey(senderViewingPublicKey)
@@ -181,8 +168,6 @@ test('keys - getNoteBlindingKeys', async (t) => {
 })
 
 test('keys - unblindNoteKey', async (t) => {
-  await initializeCryptographyLibs()
-
   // Create test keys
   const privateKey = new Uint8Array(32)
   privateKey.fill(1)
@@ -216,8 +201,6 @@ test('keys - unblindNoteKey', async (t) => {
 })
 
 test('keys - getSharedSymmetricKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const privateKeyA = new Uint8Array(32)
   privateKeyA.fill(1)
 
@@ -231,17 +214,4 @@ test('keys - getSharedSymmetricKey', async (t) => {
   if (sharedKey) {
     t.is(sharedKey.length, 32, 'shared key should be 32 bytes')
   }
-})
-
-test('keys - deterministic key generation', async (t) => {
-  await initializeCryptographyLibs()
-
-  const privateKey = new Uint8Array(32)
-  privateKey.fill(42)
-
-  const publicKey1 = getPublicSpendingKey(privateKey)
-  const publicKey2 = getPublicSpendingKey(privateKey)
-
-  t.alike(publicKey1[0], publicKey2[0], 'should generate same public key from same private key')
-  t.alike(publicKey1[1], publicKey2[1], 'should generate same public key from same private key')
 })

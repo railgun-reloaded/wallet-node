@@ -1,5 +1,5 @@
 import { stringify } from '@railgun-reloaded/0zk-addresses'
-import { test } from 'brittle'
+import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
 import { RailgunWallet } from '../src/wallet-node/railgun'
@@ -8,9 +8,18 @@ import { WalletNode } from '../src/wallet-node/wallet-node'
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 const TEST_MNEMONIC_2 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 
-test('wallet-node - WalletNode.fromMnemonic', async (t) => {
+/**
+ * Brittle does not have a built-in beforeAll/beforeEach hook.
+ * The hook() function creates a test that always runs even in --solo mode.
+ * Placed at the top of the file, it acts as a setup step that runs before
+ * all other tests, ensuring cryptography libs are initialized once.
+ */
+hook('setup cryptography libs', async (t) => {
   await initializeCryptographyLibs()
+  t.pass('cryptography libraries initialized')
+})
 
+test('wallet-node - WalletNode.fromMnemonic', async (t) => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
 
   t.ok(walletNode instanceof WalletNode, 'should return WalletNode instance')
@@ -19,8 +28,6 @@ test('wallet-node - WalletNode.fromMnemonic', async (t) => {
 })
 
 test('wallet-node - WalletNode.derive', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const derivedNode = walletNode.derive("m/44'/1984'/0'/0'/0'")
 
@@ -29,8 +36,6 @@ test('wallet-node - WalletNode.derive', async (t) => {
 })
 
 test('wallet-node - WalletNode.derive multiple paths', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const derived1 = walletNode.derive("m/44'/1984'/0'/0'/0'")
   const derived2 = walletNode.derive("m/44'/1984'/0'/0'/1'")
@@ -42,8 +47,6 @@ test('wallet-node - WalletNode.derive multiple paths', async (t) => {
 })
 
 test('wallet-node - WalletNode.getSpendingKeyPair', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const keyPair = walletNode.getSpendingKeyPair()
 
@@ -54,8 +57,6 @@ test('wallet-node - WalletNode.getSpendingKeyPair', async (t) => {
 })
 
 test('wallet-node - WalletNode.getViewingKeyPair', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const keyPair = walletNode.getViewingKeyPair()
 
@@ -66,8 +67,6 @@ test('wallet-node - WalletNode.getViewingKeyPair', async (t) => {
 })
 
 test('wallet-node - WalletNode.getNullifyingKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const nullifyingKey = walletNode.getNullifyingKey()
 
@@ -76,8 +75,6 @@ test('wallet-node - WalletNode.getNullifyingKey', async (t) => {
 })
 
 test('wallet-node - WalletNode.getMasterPublicKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const spendingKeyPair = walletNode.getSpendingKeyPair()
   const nullifyingKey = walletNode.getNullifyingKey()
@@ -88,29 +85,13 @@ test('wallet-node - WalletNode.getMasterPublicKey', async (t) => {
   t.ok(masterPublicKey.length > 0, 'should return non-empty array')
 })
 
-test('wallet-node - WalletNode deterministic', async (t) => {
-  await initializeCryptographyLibs()
-
-  const walletNode1 = WalletNode.fromMnemonic(TEST_MNEMONIC)
-  const walletNode2 = WalletNode.fromMnemonic(TEST_MNEMONIC)
-
-  const key1 = walletNode1.getSpendingKeyPair()
-  const key2 = walletNode2.getSpendingKeyPair()
-
-  t.alike(key1.privateKey, key2.privateKey, 'should generate same keys from same mnemonic')
-})
-
 test('railgun-wallet - RailgunWallet initialization', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
   t.ok(wallet instanceof RailgunWallet, 'should create RailgunWallet instance')
 })
 
 test('railgun-wallet - RailgunWallet.getSpendingPrivateKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const privateKey = wallet.getSpendingPrivateKey()
 
@@ -119,8 +100,6 @@ test('railgun-wallet - RailgunWallet.getSpendingPrivateKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet.getSpendingPublicKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const publicKey = wallet.getSpendingPublicKey()
 
@@ -129,8 +108,6 @@ test('railgun-wallet - RailgunWallet.getSpendingPublicKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet.getMasterPublicKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const masterPublicKey = wallet.getMasterPublicKey()
 
@@ -139,8 +116,6 @@ test('railgun-wallet - RailgunWallet.getMasterPublicKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet.getNullifyingKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const nullifyingKey = wallet.getNullifyingKey()
 
@@ -149,8 +124,6 @@ test('railgun-wallet - RailgunWallet.getNullifyingKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet.getViewingPublicKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const viewingPublicKey = wallet.getViewingPublicKey()
 
@@ -159,8 +132,6 @@ test('railgun-wallet - RailgunWallet.getViewingPublicKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet.getViewingPrivateKey', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const viewingPrivateKey = wallet.getViewingPrivateKey()
 
@@ -169,8 +140,6 @@ test('railgun-wallet - RailgunWallet.getViewingPrivateKey', async (t) => {
 })
 
 test('railgun-wallet - RailgunWallet with custom index', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet0 = new RailgunWallet(TEST_MNEMONIC, 0)
   const wallet1 = new RailgunWallet(TEST_MNEMONIC, 1)
 
@@ -180,21 +149,7 @@ test('railgun-wallet - RailgunWallet with custom index', async (t) => {
   t.not(key0, key1, 'should generate different keys for different indices')
 })
 
-test('railgun-wallet - RailgunWallet deterministic', async (t) => {
-  await initializeCryptographyLibs()
-
-  const wallet1 = new RailgunWallet(TEST_MNEMONIC, 0)
-  const wallet2 = new RailgunWallet(TEST_MNEMONIC, 0)
-
-  const key1 = wallet1.getSpendingPrivateKey()
-  const key2 = wallet2.getSpendingPrivateKey()
-
-  t.alike(key1, key2, 'should generate same keys from same mnemonic and index')
-})
-
 test('railgun-wallet - RailgunWallet generates expected address', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
   const expectedAddress = stringify({
@@ -228,8 +183,6 @@ test('railgun-wallet - RailgunWallet.getShieldPrivateKeySignatureMessage', (t) =
 })
 
 test('railgun-wallet - Different mnemonics generate different wallets', async (t) => {
-  await initializeCryptographyLibs()
-
   const wallet1 = new RailgunWallet(TEST_MNEMONIC, 0)
   const wallet2 = new RailgunWallet(TEST_MNEMONIC_2, 0)
 

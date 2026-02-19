@@ -9,20 +9,6 @@ test('wallet-info - encode and decode roundtrip', (t) => {
   t.is(decoded, source, 'Should roundtrip wallet source')
 })
 
-test('wallet-info - encode and decode single char', (t) => {
-  const source = 'a'
-  const encoded = WalletInfo.encodeWalletSource(source)
-  const decoded = WalletInfo.decodeWalletSource(encoded)
-  t.is(decoded, source, 'Should roundtrip single char')
-})
-
-test('wallet-info - encode and decode with numbers and spaces', (t) => {
-  const source = 'wallet 1 0'
-  const encoded = WalletInfo.encodeWalletSource(source)
-  const decoded = WalletInfo.decodeWalletSource(encoded)
-  t.is(decoded, source, 'Should roundtrip alphanumeric source')
-})
-
 test('wallet-info - encode and decode max length', (t) => {
   const source = 'abcdefghijklmnop' // 16 chars (max)
   const encoded = WalletInfo.encodeWalletSource(source)

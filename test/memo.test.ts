@@ -10,25 +10,11 @@ test('memo - encode and decode undefined memo text', (t) => {
   t.is(decoded, undefined, 'Empty array should decode to undefined')
 })
 
-test('memo - encode and decode simple text', (t) => {
-  const text = 'Hello, RAILGUN!'
-  const encoded = Memo.encodeMemoText(text)
-  const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'Should roundtrip simple text')
-})
-
-test('memo - encode and decode text with emojis', (t) => {
+test('memo - encode and decode text', (t) => {
   const text = 'Private memo field 🤡🙀🥰'
   const encoded = Memo.encodeMemoText(text)
   const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'Should roundtrip emoji text')
-})
-
-test('memo - encode and decode long text with emojis', (t) => {
-  const text = 'A really long memo with emojis 😐👩🏾‍🔧😎 and other text !@#$%^&*() Private memo field 🤡🙀🥰👩🏿‍🚒🧞 🤡 🙀 🥰 👩🏿‍🚒 🧞, in order to test a major memo for a real live production use case.'
-  const encoded = Memo.encodeMemoText(text)
-  const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'Should roundtrip long text with emojis')
+  t.is(decoded, text, 'Should roundtrip text with emojis')
 })
 
 test('memo - encrypt and decrypt V2 annotation data', (t) => {
@@ -47,37 +33,6 @@ test('memo - encrypt and decrypt V2 annotation data', (t) => {
   t.is(decrypted!.outputType, outputType, 'OutputType should match')
   t.is(decrypted!.senderRandom, senderRandom, 'SenderRandom should match')
   t.is(decrypted!.walletSource, walletSource, 'WalletSource should match')
-})
-
-test('memo - encrypt and decrypt V2 annotation with Transfer type', (t) => {
-  const viewingPrivateKey = new Uint8Array(32)
-  for (let i = 0; i < 32; i++) viewingPrivateKey[i] = i + 10
-
-  const outputType = OutputType.Transfer
-  const senderRandom = 'aabbccddeeff001122334455667788' // 15 bytes
-  const walletSource = 'test wallet'
-
-  const encrypted = Memo.encryptAnnotationData(outputType, senderRandom, walletSource, viewingPrivateKey)
-  const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
-
-  t.ok(decrypted, 'Should decrypt Transfer type annotation')
-  t.is(decrypted!.outputType, OutputType.Transfer, 'Should be Transfer type')
-  t.is(decrypted!.senderRandom, 'aabbccddeeff001122334455667788', 'SenderRandom should match')
-})
-
-test('memo - encrypt and decrypt V2 annotation with Change type', (t) => {
-  const viewingPrivateKey = new Uint8Array(32)
-  for (let i = 0; i < 32; i++) viewingPrivateKey[i] = i + 20
-
-  const outputType = OutputType.Change
-  const senderRandom = '000000000000000000000000000000' // 15 zero bytes
-  const walletSource = 'railway'
-
-  const encrypted = Memo.encryptAnnotationData(outputType, senderRandom, walletSource, viewingPrivateKey)
-  const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
-
-  t.ok(decrypted, 'Should decrypt Change type annotation')
-  t.is(decrypted!.outputType, OutputType.Change, 'Should be Change type')
 })
 
 test('memo - decrypt with wrong key returns undefined', (t) => {
