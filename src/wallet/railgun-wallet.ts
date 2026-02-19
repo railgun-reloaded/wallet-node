@@ -1,10 +1,9 @@
-import { deriveNodes } from '../derivation'
+import { deriveNodes } from './derivation'
 import type {
   SpendingKeyPair,
   SpendingPublicKey,
   ViewingKeyPair,
-} from '../types'
-
+} from './types'
 import type { WalletNodes } from './wallet-node'
 import { WalletNode } from './wallet-node'
 

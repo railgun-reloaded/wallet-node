@@ -1,5 +1,5 @@
-import type { WalletNodes } from './wallet/wallet-node'
-import { WalletNode } from './wallet/wallet-node'
+import type { WalletNodes } from './wallet-node'
+import { WalletNode } from './wallet-node'
 
 /**
  * A collection of derivation path prefixes used for generating hierarchical deterministic (HD) wallet keys.
