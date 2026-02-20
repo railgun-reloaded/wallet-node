@@ -124,16 +124,19 @@ class ShieldNote extends Note {
     }
 
     try {
-      // Bundle format: [data0 (32 bytes), data1 (32 bytes), ivTag (32 bytes)]
-      const ivTag = commitment.encryptedBundle[2]!
+      // Bundle format
+      // [0] = iv (16 bytes) + tag (16 bytes)
+      // [1] = encrypted random data (16 bytes) + encrypted receiver IV (16 bytes)
+      // [2] = encrypted receiver data (not needed here)
+      const ivTag = commitment.encryptedBundle[0]!
       const iv = ivTag.slice(0, 16)
       const tag = ivTag.slice(16, 32)
-      const data = [commitment.encryptedBundle[0]!, commitment.encryptedBundle[1]!]
+      const data = [commitment.encryptedBundle[1]!.slice(0, 16)]
 
       const decrypted = AES.decryptGCM({ iv, tag, data }, sharedKey)
 
-      // First 16 bytes of first decrypted block is the random
-      const randomBytes = decrypted[0]!.slice(0, 16)
+      // The decrypted block is the random value (16 bytes)
+      const randomBytes = decrypted[0]!
 
       return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
     } catch {
