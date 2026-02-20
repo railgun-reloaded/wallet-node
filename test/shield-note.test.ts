@@ -152,21 +152,24 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
   const viewingPrivateKey = randomBytes(32)
   const receiverViewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 
-  // Build plaintext: random (16 bytes) + padding (16 bytes) = block0 (32 bytes), block1 (32 bytes)
+  // Build plaintext: random (16 bytes)
   const noteRandom = hexToUint8Array('0x' + 'ef'.repeat(16))
-  const block0 = new Uint8Array(32)
-  block0.set(noteRandom, 0)
-  const block1 = new Uint8Array(32)
 
   // Shielder encrypts: ECDH(shieldPrivateKey, receiverViewingPublicKey)
   const sharedKey = await getSharedSymmetricKey(shieldPrivateKey, receiverViewingPublicKey)
   t.ok(sharedKey, 'should derive shared key')
-  const ciphertext = AES.encryptGCM([block0, block1], sharedKey!)
+  const ciphertext = AES.encryptGCM([noteRandom], sharedKey!)
 
-  // Pack into bundle format: [data0, data1, ivTag]
+  // On-chain bundle format:
+  // [0] = iv (16 bytes) + tag (16 bytes)
+  // [1] = encrypted random data (16 bytes) + padding (16 bytes)
+  // [2] = encrypted receiver data (not used for random decryption)
   const ivTag = new Uint8Array(32)
   ivTag.set(ciphertext.iv, 0)
   ivTag.set(ciphertext.tag, 16)
+
+  const dataBlock = new Uint8Array(32)
+  dataBlock.set(ciphertext.data[0]!, 0)
 
   const commitment = {
     hash: new Uint8Array(32),
@@ -184,7 +187,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
         ),
       },
     },
-    encryptedBundle: [ciphertext.data[0]!, ciphertext.data[1]!, ivTag],
+    encryptedBundle: [ivTag, dataBlock, new Uint8Array(32)],
     shieldKey,
   }
 
