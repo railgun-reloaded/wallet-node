@@ -20,7 +20,7 @@ const TEST_TOKEN_SUB_ID_ZERO =
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
-const TEST_VALUE = BigInt('1000000000000000000') // 1 ETH
+const TEST_VALUE = 1000000000000000000n // 1 ETH
 
 const ERC20_TOKEN_DATA = {
   tokenType: 0,
@@ -40,7 +40,7 @@ hook('setup cryptography libs', async (t) => {
 })
 
 test('shield-note - create ShieldNote', async (t) => {
-  const masterPublicKey = BigInt('123456789012345678901234567890')
+  const masterPublicKey = 123456789012345678901234567890n
   const shieldNote = new ShieldNote(
     TEST_NPK,
     TEST_VALUE,
@@ -70,7 +70,7 @@ test('shield-note - create ShieldNote', async (t) => {
 })
 
 test('shield-note - serialize and deserialize', async (t) => {
-  const masterPublicKey = BigInt('123456789012345678901234567890')
+  const masterPublicKey = 123456789012345678901234567890n
   const shieldNote = new ShieldNote(
     TEST_NPK,
     TEST_VALUE,
@@ -106,7 +106,7 @@ test('shield-note - serialize and deserialize', async (t) => {
 })
 
 test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
-  const masterPublicKey = BigInt('999888777666555444333222111')
+  const masterPublicKey = 999888777666555444333222111n
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,

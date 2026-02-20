@@ -11,7 +11,7 @@ const TEST_TOKEN_SUB_ID_ZERO =
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
-const TEST_VALUE = BigInt('1000000000000000000') // 1 ETH
+const TEST_VALUE = 1000000000000000000n // 1 ETH
 
 const ERC20_TOKEN_DATA = {
   tokenType: 0,
@@ -32,7 +32,7 @@ hook('setup cryptography libs', async (t) => {
 
 test('unshield-note - create UnshieldNote', async (t) => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
 
   const unshieldNote = new UnshieldNote(
     TEST_NPK,
@@ -56,7 +56,7 @@ test('unshield-note - create UnshieldNote', async (t) => {
 
 test('unshield-note - serialize and deserialize', async (t) => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
 
   const unshieldNote = new UnshieldNote(
     TEST_NPK,

@@ -23,7 +23,7 @@ import { ChainType, TXIDVersion } from '../src/notes/definitions'
 import { computeTokenHash } from '../src/notes/token-utils'
 
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
-const TEST_VALUE = BigInt('1000000000000000000') // 1 ETH
+const TEST_VALUE = 1000000000000000000n // 1 ETH
 
 const TEST_TOKEN_ADDRESS = '0x1234567890123456789012345678901234567890'
 const TEST_TOKEN_SUB_ID_ZERO =
@@ -68,8 +68,6 @@ hook('setup cryptography libs', async (t) => {
   await initializeCryptographyLibs()
   t.pass('cryptography libraries initialized')
 })
-
-// --- formatCommitmentCiphertext tests ---
 
 test('commitment - formatCommitmentCiphertext parses V2 ciphertext', (t) => {
   const struct: CommitmentCiphertextStruct = {
@@ -182,8 +180,6 @@ test('commitment - formatCommitmentCiphertext pads short hex values', (t) => {
   t.is(result.blindedReceiverViewingKey.length, 32, 'blinded receiver key should be 32 bytes')
 })
 
-// --- decryptCommitment tests ---
-
 test('commitment - decryptCommitment with invalid key returns null', async (t) => {
   const ciphertext = {
     iv: randomBytes(16),
@@ -230,7 +226,6 @@ test('commitment - decryptCommitmentAsReceiverOrSender with invalid keys returns
 })
 
 test('commitment - decryptCommitment successful roundtrip', async (t) => {
-  // Generate real key pairs
   const viewingPrivateKey = randomBytes(32)
   const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 

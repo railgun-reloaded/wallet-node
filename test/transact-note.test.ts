@@ -15,7 +15,7 @@ const TEST_TOKEN_SUB_ID_ZERO =
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
-const TEST_VALUE = BigInt('1000000000000000000') // 1 ETH
+const TEST_VALUE = 1000000000000000000n // 1 ETH
 
 const ERC20_TOKEN_DATA = {
   tokenType: 0,
@@ -58,9 +58,9 @@ hook('setup cryptography libs', async (t) => {
 })
 
 test('transact-note - create TransactNote', async (t) => {
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: BigInt('123456789012345678901234567890'),
+    masterPublicKey: 123456789012345678901234567890n,
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -88,9 +88,9 @@ test('transact-note - create TransactNote', async (t) => {
 })
 
 test('transact-note - serialize and deserialize', async (t) => {
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: BigInt('123456789012345678901234567890'),
+    masterPublicKey: 123456789012345678901234567890n,
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -138,13 +138,13 @@ test('transact-note - serialize and deserialize', async (t) => {
 })
 
 test('transact-note - serialize and deserialize with all optional fields', async (t) => {
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: BigInt('123456789012345678901234567890'),
+    masterPublicKey: 123456789012345678901234567890n,
     viewingPublicKey: new Uint8Array(32).fill(0xaa),
   }
   const senderAddressData = {
-    masterPublicKey: BigInt('987654321098765432109876543210'),
+    masterPublicKey: 987654321098765432109876543210n,
     viewingPublicKey: new Uint8Array(32).fill(0xbb),
   }
 
@@ -206,7 +206,7 @@ test('transact-note - fromCommitment', async (t) => {
   const npk = TEST_NPK
   const value = TEST_VALUE
   const receiverAddressData = {
-    masterPublicKey: BigInt('123456789012345678901234567890'),
+    masterPublicKey: 123456789012345678901234567890n,
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -225,6 +225,7 @@ test('transact-note - fromCommitment', async (t) => {
   t.is(transactNote.value, TEST_VALUE, 'should set value')
   t.is(transactNote.random, TEST_RANDOM, 'should set random')
   t.is(transactNote.notePublicKey, TEST_NPK, 'should set npk')
+
   // The hash should be computed via Note.getHash
   t.is(typeof transactNote.hash, 'bigint', 'should compute hash as bigint')
   t.ok(transactNote.hash > 0n, 'hash should be positive')
@@ -232,11 +233,11 @@ test('transact-note - fromCommitment', async (t) => {
 
 test('transact-note - fromCommitment with senderAddressData', async (t) => {
   const receiverAddressData = {
-    masterPublicKey: BigInt('111'),
+    masterPublicKey: 111n,
     viewingPublicKey: new Uint8Array(32),
   }
   const senderAddressData = {
-    masterPublicKey: BigInt('222'),
+    masterPublicKey: 222n,
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -252,7 +253,7 @@ test('transact-note - fromCommitment with senderAddressData', async (t) => {
   t.ok(transactNote.senderAddressData, 'should set senderAddressData')
   t.is(
     transactNote.senderAddressData!.masterPublicKey,
-    BigInt('222'),
+    222n,
     'should preserve sender masterPublicKey'
   )
 })
@@ -345,9 +346,9 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
   // Legacy format uses viewing private key directly as AES key (no ECDH)
   const viewingPrivateKey = randomBytes(32)
 
-  const hash = BigInt('99999999999999999999')
+  const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: BigInt('123456789012345678901234567890'),
+    masterPublicKey: 123456789012345678901234567890n,
     viewingPublicKey: new Uint8Array(32),
   }
 
