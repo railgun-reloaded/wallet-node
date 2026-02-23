@@ -4,7 +4,8 @@ import { AES } from '@railgun-reloaded/cryptography'
 import { hexToUint8Array, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
-import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
+import type { GeneratedCommitment, ShieldCommitment, TokenData } from './definitions'
+import { TokenType } from './definitions'
 import { Note } from './note'
 import { deserializeTokenData, serializeTokenData } from './token-utils'
 
@@ -192,13 +193,13 @@ class ShieldNote extends Note {
     let tokenTypeNum: TokenType
     switch (tokenType.toUpperCase()) {
       case 'ERC20':
-        tokenTypeNum = 0 // TokenType.ERC20
+        tokenTypeNum = TokenType.ERC20
         break
       case 'ERC721':
-        tokenTypeNum = 1 // TokenType.ERC721
+        tokenTypeNum = TokenType.ERC721
         break
       case 'ERC1155':
-        tokenTypeNum = 2 // TokenType.ERC1155
+        tokenTypeNum = TokenType.ERC1155
         break
       default:
         throw new Error(`Invalid tokenType: ${tokenType}`)
