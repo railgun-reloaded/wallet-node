@@ -106,7 +106,16 @@ test('shield-note - serialize and deserialize', async (t) => {
 })
 
 test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
   const masterPublicKey = randomBytes(32)
+  const noteRandom = hexToUint8Array('0x' + 'ef'.repeat(16))
+
+  // Encrypt the random with AES-GCM using viewingPrivateKey
+  const ciphertext = AES.encryptGCM([noteRandom], viewingPrivateKey)
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -121,10 +130,10 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
         tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
       },
     },
-    encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
+    encryptedRandom: [ivTag, ciphertext.data[0]!],
   }
 
-  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, masterPublicKey)
+  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, masterPublicKey)
 
   t.ok(
     shieldNote instanceof ShieldNote,
@@ -140,6 +149,11 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
     shieldNote.tokenData.tokenType,
     0,
     'should convert ERC20 string to enum'
+  )
+  t.is(
+    shieldNote.random,
+    uint8ArrayToHex(noteRandom),
+    'should decrypt random correctly'
   )
 })
 
@@ -260,6 +274,14 @@ test('shield-note - fromShieldCommitment returns null for wrong key', async (t) 
 })
 
 test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const noteRandom = randomBytes(16)
+
+  const ciphertext = AES.encryptGCM([noteRandom], viewingPrivateKey)
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -276,10 +298,10 @@ test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', asyn
         ),
       },
     },
-    encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
+    encryptedRandom: [ivTag, ciphertext.data[0]!],
   }
 
-  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
+  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, new Uint8Array(32))
 
   t.is(
     shieldNote.tokenData.tokenType,
@@ -307,11 +329,19 @@ test('shield-note - fromGeneratedCommitment missing random throws', async (t) =>
   }
 
   t.exception(() => {
-    ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
+    ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32), new Uint8Array(32))
   }, 'should throw when random data is missing')
 })
 
 test('shield-note - fromGeneratedCommitment invalid tokenType throws', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const noteRandom = randomBytes(16)
+
+  const ciphertext = AES.encryptGCM([noteRandom], viewingPrivateKey)
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -326,10 +356,10 @@ test('shield-note - fromGeneratedCommitment invalid tokenType throws', async (t)
         tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
       },
     },
-    encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
+    encryptedRandom: [ivTag, ciphertext.data[0]!],
   }
 
   t.exception(() => {
-    ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
+    ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, new Uint8Array(32))
   }, 'should throw for invalid token type string')
 })

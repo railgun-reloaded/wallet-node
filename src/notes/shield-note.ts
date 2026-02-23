@@ -23,22 +23,38 @@ class ShieldNote extends Note {
   masterPublicKey: Uint8Array
 
   /**
+   * Optional shield fee
+   */
+  shieldFee: bigint | undefined
+
+  /**
+   * Optional block number
+   */
+  blockNumber: number | undefined
+
+  /**
    * Constructs a new ShieldNote instance.
    * @param notePublicKey - The note public key
    * @param value - The note value
    * @param tokenData - The token data
    * @param random - Random value (16 bytes hex string)
    * @param masterPublicKey - The master public key
+   * @param shieldFee - Optional shield fee
+   * @param blockNumber - Optional block number
    */
   constructor (
     notePublicKey: string,
     value: bigint,
     tokenData: TokenData,
     random: string,
-    masterPublicKey: Uint8Array
+    masterPublicKey: Uint8Array,
+    shieldFee?: bigint,
+    blockNumber?: number
   ) {
     super(notePublicKey, value, tokenData, random)
     this.masterPublicKey = masterPublicKey
+    this.shieldFee = shieldFee
+    this.blockNumber = blockNumber
   }
 
   /**
@@ -57,6 +73,8 @@ class ShieldNote extends Note {
         tokenType: this.tokenData.tokenType,
         tokenSubID: this.tokenData.tokenSubID,
       },
+      shieldFee: this.shieldFee?.toString(),
+      blockNumber: this.blockNumber,
     })
   }
 
@@ -66,33 +84,45 @@ class ShieldNote extends Note {
    * @returns A new ShieldNote instance
    */
   static deserialize (bytes: Uint8Array): ShieldNote {
-    const { notePublicKey, masterPublicKey, token, value, random } = decode(bytes) as any
+    const { notePublicKey, masterPublicKey, token, value, random, shieldFee, blockNumber } = decode(bytes) as any
 
     return new ShieldNote(
       notePublicKey,
       BigInt(value),
       deserializeTokenData(token),
       random,
-      hexToUint8Array(masterPublicKey)
+      hexToUint8Array(masterPublicKey),
+      shieldFee ? BigInt(shieldFee) : undefined,
+      blockNumber
     )
   }
 
   /**
    * Creates a ShieldNote from a GeneratedCommitment (V1).
-   * The random value is stored in plaintext in encryptedRandom[0].
-   * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
+   * The random is encrypted in encryptedRandom using AES-GCM with the viewing private key.
+   * encryptedRandom layout:
+   *   [0] = ivTag (32 bytes: iv 16 + tag 16)
+   *   [1] = encrypted random data (16 bytes)
    * @param commitment - The GeneratedCommitment object
+   * @param viewingPrivateKey - The wallet's viewing private key for decryption
    * @param masterPublicKey - The master public key
    * @returns A new ShieldNote instance
    */
   static fromGeneratedCommitment (
     commitment: GeneratedCommitment,
+    viewingPrivateKey: Uint8Array,
     masterPublicKey: Uint8Array
   ): ShieldNote {
-    const randomBytes = commitment.encryptedRandom?.[0]
-    if (!randomBytes) {
-      throw new Error('Missing random data in GeneratedCommitment')
+    const ivTag = commitment.encryptedRandom?.[0]
+    const encryptedData = commitment.encryptedRandom?.[1]
+    if (!ivTag || !encryptedData) {
+      throw new Error('Missing encryptedRandom data in GeneratedCommitment')
     }
+
+    const iv = ivTag.slice(0, 16)
+    const tag = ivTag.slice(16, 32)
+    const decrypted = AES.decryptGCM({ iv, tag, data: [encryptedData] }, viewingPrivateKey)
+    const randomBytes = decrypted[0]!
 
     return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
   }
@@ -180,12 +210,15 @@ class ShieldNote extends Note {
       uint8ArrayToHex(tokenSubID)
     )
 
+    const shieldFee = 'fee' in commitment ? commitment.fee : undefined
+
     return new ShieldNote(
       uint8ArrayToHex(npk),
       value,
       tokenData,
       random,
-      masterPublicKey
+      masterPublicKey,
+      shieldFee
     )
   }
 }
