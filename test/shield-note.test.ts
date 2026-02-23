@@ -40,7 +40,7 @@ hook('setup cryptography libs', async (t) => {
 })
 
 test('shield-note - create ShieldNote', async (t) => {
-  const masterPublicKey = 123456789012345678901234567890n
+  const masterPublicKey = randomBytes(32)
   const shieldNote = new ShieldNote(
     TEST_NPK,
     TEST_VALUE,
@@ -51,7 +51,7 @@ test('shield-note - create ShieldNote', async (t) => {
 
   t.ok(shieldNote instanceof ShieldNote, 'should create ShieldNote instance')
   t.is(shieldNote.value, TEST_VALUE, 'should set value correctly')
-  t.is(
+  t.alike(
     shieldNote.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey correctly'
@@ -70,7 +70,7 @@ test('shield-note - create ShieldNote', async (t) => {
 })
 
 test('shield-note - serialize and deserialize', async (t) => {
-  const masterPublicKey = 123456789012345678901234567890n
+  const masterPublicKey = randomBytes(32)
   const shieldNote = new ShieldNote(
     TEST_NPK,
     TEST_VALUE,
@@ -86,7 +86,7 @@ test('shield-note - serialize and deserialize', async (t) => {
 
   t.ok(deserialized instanceof ShieldNote, 'should deserialize to ShieldNote')
   t.is(deserialized.value, TEST_VALUE, 'should preserve value')
-  t.is(
+  t.alike(
     deserialized.masterPublicKey,
     masterPublicKey,
     'should preserve masterPublicKey'
@@ -106,7 +106,7 @@ test('shield-note - serialize and deserialize', async (t) => {
 })
 
 test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
-  const masterPublicKey = 999888777666555444333222111n
+  const masterPublicKey = randomBytes(32)
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -131,7 +131,7 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
     'should create ShieldNote from GeneratedCommitment'
   )
   t.is(shieldNote.value, 5000n, 'should set value from preimage')
-  t.is(
+  t.alike(
     shieldNote.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey from parameter'
@@ -191,7 +191,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
     shieldKey,
   }
 
-  const masterPublicKey = 12345n
+  const masterPublicKey = randomBytes(32)
   const shieldNote = await ShieldNote.fromShieldCommitment(commitment, viewingPrivateKey, masterPublicKey)
 
   t.ok(
@@ -209,7 +209,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
     1,
     'should convert ERC721 string to enum'
   )
-  t.is(
+  t.alike(
     shieldNote!.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey from parameter, not shieldKey'
@@ -254,7 +254,7 @@ test('shield-note - fromShieldCommitment returns null for wrong key', async (t) 
 
   // Try to decrypt with a different private key
   const wrongPrivateKey = randomBytes(32)
-  const result = await ShieldNote.fromShieldCommitment(commitment, wrongPrivateKey, 99999n)
+  const result = await ShieldNote.fromShieldCommitment(commitment, wrongPrivateKey, new Uint8Array(32))
 
   t.is(result, null, 'should return null when decryption fails')
 })
@@ -279,7 +279,7 @@ test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', asyn
     encryptedRandom: [hexToUint8Array('0x' + 'cd'.repeat(16))],
   }
 
-  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, 1n)
+  const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
 
   t.is(
     shieldNote.tokenData.tokenType,
@@ -307,7 +307,7 @@ test('shield-note - fromGeneratedCommitment missing random throws', async (t) =>
   }
 
   t.exception(() => {
-    ShieldNote.fromGeneratedCommitment(commitment, 1n)
+    ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
   }, 'should throw when random data is missing')
 })
 
@@ -330,6 +330,6 @@ test('shield-note - fromGeneratedCommitment invalid tokenType throws', async (t)
   }
 
   t.exception(() => {
-    ShieldNote.fromGeneratedCommitment(commitment, 1n)
+    ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32))
   }, 'should throw for invalid token type string')
 })

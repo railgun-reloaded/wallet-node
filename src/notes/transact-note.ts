@@ -1,9 +1,9 @@
 import { decode, encode } from '@msgpack/msgpack'
+import { parse as parse0zkAddress, stringify as stringify0zkAddress } from '@railgun-reloaded/0zk-addresses'
 import { AES } from '@railgun-reloaded/cryptography'
 
 import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
-import { decodeAddress, encodeAddress } from './address-utils'
 import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
 import { Note } from './note'
 import { computeTokenHash, getTokenDataERC20 } from './token-utils'
@@ -121,9 +121,9 @@ class TransactNote extends Note {
       value: this.value.toString(),
       tokenHash: this.tokenHash,
       random: this.random,
-      recipientAddress: encodeAddress(this.receiverAddressData),
+      recipientAddress: stringify0zkAddress(this.receiverAddressData),
       senderAddress: this.senderAddressData
-        ? encodeAddress(this.senderAddressData)
+        ? stringify0zkAddress(this.senderAddressData!)
         : undefined,
       outputType: this.outputType,
       walletSource: this.walletSource,
@@ -151,10 +151,10 @@ class TransactNote extends Note {
   ): Promise<TransactNote> {
     const data = decode(bytes) as any
 
-    const receiverAddressData = decodeAddress(data.recipientAddress)
+    const receiverAddressData = parse0zkAddress(data.recipientAddress)
 
     const senderAddressData = data.senderAddress
-      ? decodeAddress(data.senderAddress)
+      ? parse0zkAddress(data.senderAddress)
       : undefined
 
     const tokenData = await tokenDataGetter.getTokenDataFromHash(txidVersion, chain, data.tokenHash)
@@ -239,7 +239,7 @@ class TransactNote extends Note {
       tokenHash: this.tokenHash,
       encryptedRandom,
       memoField: [],
-      recipientAddress: encodeAddress(this.receiverAddressData),
+      recipientAddress: stringify0zkAddress(this.receiverAddressData),
       memoText: this.memoText,
       blockNumber: this.blockNumber,
     })
@@ -273,7 +273,7 @@ class TransactNote extends Note {
     // Legacy notes are always ERC20
     const tokenData = getTokenDataERC20(data.tokenHash)
 
-    const receiverAddressData = decodeAddress(data.recipientAddress)
+    const receiverAddressData = parse0zkAddress(data.recipientAddress)
 
     const npkBytes = hexToUint8Array(data.npk)
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))

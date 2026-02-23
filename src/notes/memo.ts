@@ -1,7 +1,7 @@
 import type { CiphertextCTR } from '@railgun-reloaded/cryptography'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToHex } from '../encoding'
+import { hexToUint8Array, hexlify, uint8ArrayToHex } from '../encoding'
 
 import type { NoteAnnotationData } from './definitions'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from './definitions'
@@ -17,7 +17,7 @@ class Memo {
    * @returns Uint8Array of the UTF-8 encoded text (empty array if undefined)
    */
   static encodeMemoText (memoText: string | undefined): Uint8Array {
-    if (memoText === undefined) {
+    if (memoText === undefined || memoText.length === 0) {
       return new Uint8Array(0)
     }
 
@@ -61,14 +61,13 @@ class Memo {
     const block0 = new Uint8Array(16)
     block0[0] = outputType
 
-    const senderRandomClean = senderRandom.startsWith('0x') ? senderRandom.slice(2) : senderRandom
+    const senderRandomClean = hexlify(senderRandom)
     if (senderRandomClean.length !== 30) {
       throw new Error(`senderRandom must be 15 bytes (30 hex chars), got ${senderRandomClean.length}`)
     }
 
-    for (let i = 0; i < 15; i++) {
-      block0[i + 1] = parseInt(senderRandomClean.slice(i * 2, i * 2 + 2), 16)
-    }
+    // Convert senderRandom hex string to bytes into block0[1..15]
+    block0.set(hexToUint8Array(senderRandomClean), 1)
 
     // Block 1: 16 zero bytes (reserved)
     const block1 = new Uint8Array(16)

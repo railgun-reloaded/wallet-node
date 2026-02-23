@@ -1,47 +1,10 @@
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { formatToByteLength, hexToUint8Array, uint8ArrayToHex } from '../encoding'
+import { uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
-import type { Chain, Ciphertext, CommitmentCiphertextStruct, FormattedCommitmentCiphertext, TokenData, TokenDataGetter } from './definitions'
+import type { Chain, Ciphertext, TokenData, TokenDataGetter } from './definitions'
 import { TXIDVersion } from './definitions'
-
-/**
- * Formats raw on-chain commitment ciphertext into the Uint8Array-based
- * format expected by decryptCommitment.
- *
- * Conversion:
- *   ciphertext[0] (32 bytes) → iv (first 16 bytes) + tag (last 16 bytes)
- *   ciphertext[1..] → data blocks (32 bytes each)
- *
- * Mirrors engine's V2Events.formatCommitmentCiphertext.
- * @param struct - raw on-chain commitment ciphertext with hex strings
- * @returns formatted commitment ciphertext with Uint8Array fields
- */
-function formatCommitmentCiphertext (
-  struct: CommitmentCiphertextStruct
-): FormattedCommitmentCiphertext {
-  const ciphertextFormatted = struct.ciphertext.map(el => formatToByteLength(el, 32))
-  const ivTagHex = ciphertextFormatted[0]
-
-  if (!ivTagHex) {
-    throw new Error('Commitment ciphertext must have at least one element')
-  }
-
-  const ciphertext: Ciphertext = {
-    iv: hexToUint8Array('0x' + ivTagHex.slice(0, 32)),
-    tag: hexToUint8Array('0x' + ivTagHex.slice(32, 64)),
-    data: ciphertextFormatted.slice(1).map(h => hexToUint8Array('0x' + h)),
-  }
-
-  return {
-    ciphertext,
-    blindedSenderViewingKey: hexToUint8Array('0x' + formatToByteLength(struct.blindedSenderViewingKey, 32)),
-    blindedReceiverViewingKey: hexToUint8Array('0x' + formatToByteLength(struct.blindedReceiverViewingKey, 32)),
-    annotationData: hexToUint8Array(struct.annotationData),
-    memo: hexToUint8Array(struct.memo),
-  }
-}
 
 interface DecryptedCommitmentData {
   random: string
@@ -104,11 +67,7 @@ async function decryptCommitment (
     // decryptedCiphertext[2] contains: random (16 bytes) + value (16 bytes)
     const random = uint8ArrayToHex(randomValueBytes.slice(0, 16))
 
-    const valueSlice = randomValueBytes.slice(16, 32)
-    let value = 0n
-    for (let i = 0; i < valueSlice.length; i++) {
-      value = (value << 8n) | BigInt(valueSlice[i] ?? 0)
-    }
+    const value = uint8ArrayToBigInt(randomValueBytes.slice(16, 32))
 
     return { random, encodedMPK, value, tokenData }
   } catch (error) {
@@ -170,4 +129,4 @@ async function decryptCommitmentAsReceiverOrSender (
 }
 
 export type { DecryptedCommitmentData }
-export { formatCommitmentCiphertext, decryptCommitment, decryptCommitmentAsReceiverOrSender }
+export { decryptCommitment, decryptCommitmentAsReceiverOrSender }

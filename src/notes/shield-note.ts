@@ -1,7 +1,7 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToHex } from '../encoding'
+import { hexToUint8Array, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
 import type { GeneratedCommitment, ShieldCommitment, TokenData, TokenType } from './definitions'
@@ -18,9 +18,9 @@ import { deserializeTokenData, serializeTokenData } from './token-utils'
  */
 class ShieldNote extends Note {
   /**
-   * The master public key as a bigint
+   * The master public key as a Uint8Array (32 bytes)
    */
-  masterPublicKey: bigint
+  masterPublicKey: Uint8Array
 
   /**
    * Constructs a new ShieldNote instance.
@@ -35,7 +35,7 @@ class ShieldNote extends Note {
     value: bigint,
     tokenData: TokenData,
     random: string,
-    masterPublicKey: bigint
+    masterPublicKey: Uint8Array
   ) {
     super(notePublicKey, value, tokenData, random)
     this.masterPublicKey = masterPublicKey
@@ -51,7 +51,7 @@ class ShieldNote extends Note {
       tokenHash: this.tokenHash,
       notePublicKey: this.notePublicKey,
       value: this.value.toString(),
-      masterPublicKey: this.masterPublicKey.toString(),
+      masterPublicKey: uint8ArrayToHex(this.masterPublicKey),
       token: {
         tokenAddress: this.tokenData.tokenAddress,
         tokenType: this.tokenData.tokenType,
@@ -73,7 +73,7 @@ class ShieldNote extends Note {
       BigInt(value),
       deserializeTokenData(token),
       random,
-      BigInt(masterPublicKey)
+      hexToUint8Array(masterPublicKey)
     )
   }
 
@@ -82,12 +82,12 @@ class ShieldNote extends Note {
    * The random value is stored in plaintext in encryptedRandom[0].
    * NOTE: Requires cryptography libraries to be initialized first via initializeCryptographyLibs()
    * @param commitment - The GeneratedCommitment object
-   * @param masterPublicKey - The master public key as bigint
+   * @param masterPublicKey - The master public key
    * @returns A new ShieldNote instance
    */
   static fromGeneratedCommitment (
     commitment: GeneratedCommitment,
-    masterPublicKey: bigint
+    masterPublicKey: Uint8Array
   ): ShieldNote {
     const randomBytes = commitment.encryptedRandom?.[0]
     if (!randomBytes) {
@@ -112,7 +112,7 @@ class ShieldNote extends Note {
   static async fromShieldCommitment (
     commitment: ShieldCommitment,
     viewingPrivateKey: Uint8Array,
-    masterPublicKey: bigint
+    masterPublicKey: Uint8Array
   ): Promise<ShieldNote | null> {
     if (!commitment.encryptedBundle || commitment.encryptedBundle.length < 3) {
       throw new Error('Invalid encryptedBundle in ShieldCommitment')
@@ -155,7 +155,7 @@ class ShieldNote extends Note {
   private static buildFromPreimage (
     commitment: GeneratedCommitment | ShieldCommitment,
     random: string,
-    masterPublicKey: bigint
+    masterPublicKey: Uint8Array
   ): ShieldNote {
     const { npk, value, token: { tokenAddress, tokenSubID, tokenType } } = commitment.preimage
 

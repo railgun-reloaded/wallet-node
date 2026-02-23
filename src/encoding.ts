@@ -11,15 +11,6 @@ const sha512HMAC = (key: Uint8Array, data: Uint8Array): Uint8Array => {
 }
 
 /**
- * Encodes a given string into a Uint8Array using UTF-8 encoding.
- * @param string - The input string to be encoded.
- * @returns A Uint8Array representing the UTF-8 encoded bytes of the input string.
- */
-const encodeBytes = (string: string): Uint8Array => {
-  return new TextEncoder().encode(string)
-}
-
-/**
  * Converts a Uint8Array into a bigint by interpreting the array as a big-endian sequence of bytes.
  * Each byte is shifted and combined into the resulting bigint.
  * @param uint8Array - The input Uint8Array to be converted.
@@ -49,28 +40,6 @@ const hexToArray = (hex: string): Uint8Array => {
   }
 
   return array
-}
-
-/**
- * Converts a bigint value into a Uint8Array representation.
- * The function calculates the required length of the byte array based on the
- * decimal string representation of the bigint value, ensuring sufficient space
- * to store the value in bytes. It then iteratively extracts the least significant
- * 8 bits of the bigint and shifts the value right by 8 bits until the entire
- * bigint is converted into the byte array.
- * @param value - The bigint value to be converted into a Uint8Array.
- * @returns A Uint8Array containing the byte representation of the input bigint.
- */
-const bigIntToArray = (value: bigint): Uint8Array => {
-  // length = value.toString(2).length / 2
-  const length = Math.ceil(value.toString(10).length / 2)
-
-  const byteArray = new Uint8Array(length)
-  for (let i = 0; i < byteArray.length; i++) {
-    byteArray[i] = Number(value & 0xffn) // Extract last 8 bits
-    value >>= 8n // Shift right by 8 bits
-  }
-  return byteArray
 }
 
 /**
@@ -133,7 +102,7 @@ const uint8ArrayToHex = (bytes: Uint8Array, prefix: boolean = true): string => {
  * @throws {Error} If hex string is invalid
  */
 const hexToUint8Array = (hex: string): Uint8Array => {
-  const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex
+  const cleanHex = strip0x(hex)
   if (cleanHex.length % 2 !== 0) {
     throw new Error(`Hex string must have even length. Got: ${hex}`)
   }
@@ -150,7 +119,7 @@ const hexToUint8Array = (hex: string): Uint8Array => {
  * @returns padded hex string without 0x prefix
  */
 const formatToByteLength = (hex: string, byteLength: number): string => {
-  const stripped = hex.startsWith('0x') ? hex.slice(2) : hex
+  const stripped = strip0x(hex)
   return stripped.padStart(byteLength * 2, '0')
 }
 
@@ -166,4 +135,35 @@ const bigintToHex = (value: bigint, byteLength: number): string => {
   return '0x' + hex.padStart(charLength, '0')
 }
 
-export { xorBytesInPlace, bigIntToArray, bigintToUint8Array, encodeBytes, uint8ArrayToBigInt, sha512HMAC, hexToArray, uint8ArrayToHex, hexToUint8Array, formatToByteLength, bigintToHex }
+/**
+ * Strips the '0x' prefix from a hex string if present.
+ * @param hex - The hex string to strip
+ * @returns The hex string without '0x' prefix
+ */
+const strip0x = (hex: string): string => hex.startsWith('0x') ? hex.slice(2) : hex
+
+/**
+ * Coerces various data types into a normalized lowercase hex string.
+ * Strips 0x prefix from strings, pads odd-length hex to even, converts
+ * bigints/numbers to hex, and converts Uint8Arrays to hex.
+ * @param data - The data to hexlify (string, bigint, number, or Uint8Array)
+ * @returns A normalized lowercase hex string without 0x prefix
+ */
+const hexlify = (data: string | bigint | number | Uint8Array): string => {
+  let hexString: string
+
+  if (typeof data === 'string') {
+    hexString = strip0x(data)
+  } else if (typeof data === 'bigint' || typeof data === 'number') {
+    hexString = BigInt(data).toString(16)
+    if (hexString.length % 2 === 1) {
+      hexString = '0' + hexString
+    }
+  } else {
+    hexString = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
+  return hexString.toLowerCase()
+}
+
+export { xorBytesInPlace, bigintToUint8Array, uint8ArrayToBigInt, sha512HMAC, uint8ArrayToHex, hexToUint8Array, formatToByteLength, bigintToHex, hexlify }

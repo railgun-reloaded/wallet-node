@@ -1,4 +1,3 @@
-export * from './address-utils'
 export * from './commitment'
 export * from './definitions'
 export * from './token-utils'

@@ -1,6 +1,6 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { bigintToUint8Array } from '../encoding'
+import { bigintToUint8Array, hexlify } from '../encoding'
 
 import type { TokenData } from './definitions'
 import { assertValidNoteToken, computeTokenHash } from './token-utils'
@@ -63,7 +63,7 @@ abstract class Note {
    * @throws {Error} If validation fails
    */
   static assertValidRandom (random: string): void {
-    const cleanRandom = random.startsWith('0x') ? random.slice(2) : random
+    const cleanRandom = hexlify(random)
 
     if (cleanRandom.length !== 32) {
       throw new Error(
@@ -90,14 +90,6 @@ abstract class Note {
    * @returns The serialized note
    */
   abstract serialize (): Uint8Array
-
-  /**
-   * Gets the computed token hash for this note.
-   * @returns The token hash
-   */
-  getTokenHash (): string {
-    return this.tokenHash
-  }
 }
 
 export { Note }

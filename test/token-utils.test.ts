@@ -54,17 +54,17 @@ hook('setup cryptography libs', async (t) => {
 test('token-utils - computeTokenHash known vectors', (t) => {
   t.is(
     computeTokenHash(ERC20_TOKEN_DATA),
-    '0x0000000000000000000000001234567890123456789012345678901234567890',
+    '0000000000000000000000001234567890123456789012345678901234567890',
     'ERC20 hash should be zero-padded address'
   )
   t.is(
     computeTokenHash(ERC721_TOKEN_DATA),
-    '0x075b737079de804169d5e006add4da4942063ab4fce32268c469c49460e52be0',
+    '075b737079de804169d5e006add4da4942063ab4fce32268c469c49460e52be0',
     'ERC721 hash should match known vector'
   )
   t.is(
     computeTokenHash(ERC1155_TOKEN_DATA),
-    '0x03b8bfbf662863b2da6422aa0d1f021639ca87ae10d85bdf48069c2e98c72d6a',
+    '03b8bfbf662863b2da6422aa0d1f021639ca87ae10d85bdf48069c2e98c72d6a',
     'ERC1155 hash should match known vector'
   )
 })
@@ -84,12 +84,12 @@ test('token-utils - computeTokenHash invalid token type', (t) => {
 test('token-utils - computeTokenHashERC20 direct', (t) => {
   t.is(
     computeTokenHashERC20(TEST_TOKEN_ADDRESS),
-    '0x0000000000000000000000001234567890123456789012345678901234567890',
+    '0000000000000000000000001234567890123456789012345678901234567890',
     'should zero-pad address to 32 bytes'
   )
   t.is(
     computeTokenHashERC20('1234567890123456789012345678901234567890'),
-    '0x0000000000000000000000001234567890123456789012345678901234567890',
+    '0000000000000000000000001234567890123456789012345678901234567890',
     'should handle address without 0x prefix'
   )
 })
@@ -200,7 +200,7 @@ test('token-utils - assertValidNoteToken ERC721 missing subID', (t) => {
   const tokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: '0x0',
+    tokenSubID: '',
   }
   t.exception(() => {
     assertValidNoteToken(tokenData, 1n)
@@ -244,7 +244,7 @@ test('token-utils - assertValidNoteToken ERC1155 missing subID', (t) => {
   const tokenData = {
     tokenType: 2,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: '0x0',
+    tokenSubID: '',
   }
   t.exception(() => {
     assertValidNoteToken(tokenData, 100n)

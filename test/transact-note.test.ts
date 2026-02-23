@@ -1,6 +1,7 @@
 import { randomBytes } from '@noble/hashes/utils'
 import { hook, test } from 'brittle'
 
+import { hexlify } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import type { TokenDataGetter } from '../src/notes/definitions'
 import { ChainType, TXIDVersion } from '../src/notes/definitions'
@@ -36,7 +37,7 @@ const mockTokenDataGetter: TokenDataGetter = {
    * @returns ERC20 token data with address extracted from hash
    */
   async getTokenDataFromHash (_txidVersion, _chain, tokenHash) {
-    const cleanHash = tokenHash.startsWith('0x') ? tokenHash.slice(2) : tokenHash
+    const cleanHash = hexlify(tokenHash)
     const address = '0x' + cleanHash.slice(24) // last 20 bytes
     return {
       tokenType: 0,
@@ -60,7 +61,7 @@ hook('setup cryptography libs', async (t) => {
 test('transact-note - create TransactNote', async (t) => {
   const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: 123456789012345678901234567890n,
+    masterPublicKey: randomBytes(32),
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -90,7 +91,7 @@ test('transact-note - create TransactNote', async (t) => {
 test('transact-note - serialize and deserialize', async (t) => {
   const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: 123456789012345678901234567890n,
+    masterPublicKey: randomBytes(32),
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -125,7 +126,7 @@ test('transact-note - serialize and deserialize', async (t) => {
     ERC20_TOKEN_DATA.tokenType,
     'should preserve tokenType'
   )
-  t.is(
+  t.alike(
     deserialized.receiverAddressData.masterPublicKey,
     receiverAddressData.masterPublicKey,
     'should preserve receiver masterPublicKey'
@@ -140,11 +141,11 @@ test('transact-note - serialize and deserialize', async (t) => {
 test('transact-note - serialize and deserialize with all optional fields', async (t) => {
   const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: 123456789012345678901234567890n,
+    masterPublicKey: new Uint8Array(32).fill(0x11),
     viewingPublicKey: new Uint8Array(32).fill(0xaa),
   }
   const senderAddressData = {
-    masterPublicKey: 987654321098765432109876543210n,
+    masterPublicKey: new Uint8Array(32).fill(0x22),
     viewingPublicKey: new Uint8Array(32).fill(0xbb),
   }
 
@@ -174,13 +175,13 @@ test('transact-note - serialize and deserialize with all optional fields', async
 
   t.is(deserialized.value, TEST_VALUE, 'should preserve value')
   t.is(deserialized.random, TEST_RANDOM, 'should preserve random')
-  t.is(
+  t.alike(
     deserialized.receiverAddressData.masterPublicKey,
     receiverAddressData.masterPublicKey,
     'should preserve receiver masterPublicKey'
   )
   t.ok(deserialized.senderAddressData, 'should preserve senderAddressData')
-  t.is(
+  t.alike(
     deserialized.senderAddressData!.masterPublicKey,
     senderAddressData.masterPublicKey,
     'should preserve sender masterPublicKey'
@@ -206,7 +207,7 @@ test('transact-note - fromCommitment', async (t) => {
   const npk = TEST_NPK
   const value = TEST_VALUE
   const receiverAddressData = {
-    masterPublicKey: 123456789012345678901234567890n,
+    masterPublicKey: randomBytes(32),
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -232,12 +233,13 @@ test('transact-note - fromCommitment', async (t) => {
 })
 
 test('transact-note - fromCommitment with senderAddressData', async (t) => {
+  const senderMPK = new Uint8Array(32).fill(0x22)
   const receiverAddressData = {
-    masterPublicKey: 111n,
+    masterPublicKey: new Uint8Array(32).fill(0x11),
     viewingPublicKey: new Uint8Array(32),
   }
   const senderAddressData = {
-    masterPublicKey: 222n,
+    masterPublicKey: senderMPK,
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -251,9 +253,9 @@ test('transact-note - fromCommitment with senderAddressData', async (t) => {
   )
 
   t.ok(transactNote.senderAddressData, 'should set senderAddressData')
-  t.is(
+  t.alike(
     transactNote.senderAddressData!.masterPublicKey,
-    222n,
+    senderMPK,
     'should preserve sender masterPublicKey'
   )
 })
@@ -348,7 +350,7 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
 
   const hash = 99999999999999999999n
   const receiverAddressData = {
-    masterPublicKey: 123456789012345678901234567890n,
+    masterPublicKey: randomBytes(32),
     viewingPublicKey: new Uint8Array(32),
   }
 
@@ -395,7 +397,7 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
   t.is(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
   t.is(deserialized.memoText, 'legacy memo', 'should preserve memoText')
   t.is(deserialized.blockNumber, 100, 'should preserve blockNumber')
-  t.is(
+  t.alike(
     deserialized.receiverAddressData.masterPublicKey,
     receiverAddressData.masterPublicKey,
     'should preserve receiver masterPublicKey through bech32 roundtrip'

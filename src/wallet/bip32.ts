@@ -1,8 +1,8 @@
-import { encodeBytes, sha512HMAC } from '../encoding'
+import { sha512HMAC } from '../encoding'
 
 import type { KeyNode } from './types'
 
-const CURVE_SEED = encodeBytes('babyjubjub seed') // same calculation as current engine
+const CURVE_SEED = new TextEncoder().encode('babyjubjub seed')
 
 /**
  * Tests derivation path to see if it's valid.
@@ -93,7 +93,6 @@ function getMasterKeyFromSeed (seed: Uint8Array): KeyNode {
   const chainKey = I.slice(0, 32)
   const chainCode = I.slice(32)
 
-  // Return node
   return {
     chainKey,
     chainCode,

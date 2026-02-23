@@ -1,3 +1,5 @@
+import { hexToUint8Array, hexlify, uint8ArrayToBigInt } from '../encoding'
+
 const MAX_LENGTH = 16
 const WALLET_SOURCE_CHARSET = ' 0123456789abcdefghijklmnopqrstuvwxyz'
 
@@ -42,15 +44,7 @@ class WalletInfo {
     }
 
     // Convert bigint to bytes (big-endian)
-    const hex = outputNumber.toString(16)
-    const paddedHex = hex.length % 2 ? '0' + hex : hex
-    const bytes = new Uint8Array(paddedHex.length / 2)
-
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = parseInt(paddedHex.slice(i * 2, i * 2 + 2), 16)
-    }
-
-    return bytes
+    return hexToUint8Array(hexlify(outputNumber))
   }
 
   /**
@@ -64,10 +58,7 @@ class WalletInfo {
     }
 
     // Convert bytes to bigint (big-endian)
-    let inputNumber = 0n
-    for (let i = 0; i < encoded.length; i++) {
-      inputNumber = (inputNumber << 8n) | BigInt(encoded[i] ?? 0)
-    }
+    let inputNumber = uint8ArrayToBigInt(encoded)
 
     if (inputNumber === 0n) {
       return ''
