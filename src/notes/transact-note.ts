@@ -5,8 +5,24 @@ import { AES } from '@railgun-reloaded/cryptography'
 import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
+import type { NoteParams } from './note'
 import { Note } from './note'
 import { computeTokenHash, getTokenDataERC20 } from './token-utils'
+
+/**
+ * Parameters for constructing a TransactNote.
+ */
+type TransactNoteParams = NoteParams & {
+  hash: bigint
+  receiverAddressData: AddressData
+  senderAddressData?: AddressData | undefined
+  outputType?: number | undefined
+  walletSource?: string | undefined
+  senderRandom?: string | undefined
+  memoText?: string | undefined
+  shieldFee?: string | undefined
+  blockNumber?: number | undefined
+}
 
 /**
  * Represents a Transact note for private-to-private transfers.
@@ -69,45 +85,19 @@ class TransactNote extends Note {
 
   /**
    * Constructs a new TransactNote instance.
-   * @param notePublicKey - The note public key
-   * @param value - The note value
-   * @param tokenData - The token data
-   * @param random - Random value (16 bytes hex string)
-   * @param hash - The note hash
-   * @param receiverAddressData - Receiver address data
-   * @param senderAddressData - Optional sender address data
-   * @param outputType - Optional output type
-   * @param walletSource - Optional wallet source
-   * @param senderRandom - Optional sender random value
-   * @param memoText - Optional memo text
-   * @param shieldFee - Optional shield fee
-   * @param blockNumber - Optional block number
+   * @param params - The transact note parameters
    */
-  constructor (
-    notePublicKey: string,
-    value: bigint,
-    tokenData: TokenData,
-    random: string,
-    hash: bigint,
-    receiverAddressData: AddressData,
-    senderAddressData?: AddressData,
-    outputType?: number,
-    walletSource?: string,
-    senderRandom?: string,
-    memoText?: string,
-    shieldFee?: string,
-    blockNumber?: number
-  ) {
-    super(notePublicKey, value, tokenData, random)
-    this.hash = hash
-    this.receiverAddressData = receiverAddressData
-    this.senderAddressData = senderAddressData
-    this.outputType = outputType
-    this.walletSource = walletSource
-    this.senderRandom = senderRandom
-    this.memoText = memoText
-    this.shieldFee = shieldFee
-    this.blockNumber = blockNumber
+  constructor (params: TransactNoteParams) {
+    super(params)
+    this.hash = params.hash
+    this.receiverAddressData = params.receiverAddressData
+    this.senderAddressData = params.senderAddressData
+    this.outputType = params.outputType
+    this.walletSource = params.walletSource
+    this.senderRandom = params.senderRandom
+    this.memoText = params.memoText
+    this.shieldFee = params.shieldFee
+    this.blockNumber = params.blockNumber
   }
 
   /**
@@ -164,21 +154,21 @@ class TransactNote extends Note {
     const value = BigInt(data.value)
     const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
-    return new TransactNote(
-      data.npk,
+    return new TransactNote({
+      notePublicKey: data.npk,
       value,
       tokenData,
-      data.random,
+      random: data.random,
       hash,
       receiverAddressData,
       senderAddressData,
-      data.outputType,
-      data.walletSource,
-      data.senderRandom,
-      data.memoText,
-      data.shieldFee,
-      data.blockNumber
-    )
+      outputType: data.outputType,
+      walletSource: data.walletSource,
+      senderRandom: data.senderRandom,
+      memoText: data.memoText,
+      shieldFee: data.shieldFee,
+      blockNumber: data.blockNumber,
+    })
   }
 
   /**
@@ -205,15 +195,15 @@ class TransactNote extends Note {
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
     const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
-    return new TransactNote(
-      npk,
+    return new TransactNote({
+      notePublicKey: npk,
       value,
       tokenData,
       random,
       hash,
       receiverAddressData,
-      senderAddressData
-    )
+      senderAddressData,
+    })
   }
 
   /**
@@ -279,21 +269,16 @@ class TransactNote extends Note {
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
     const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
 
-    return new TransactNote(
-      data.npk,
-      BigInt(data.value),
+    return new TransactNote({
+      notePublicKey: data.npk,
+      value: BigInt(data.value),
       tokenData,
       random,
       hash,
       receiverAddressData,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      data.memoText,
-      undefined,
-      data.blockNumber
-    )
+      memoText: data.memoText,
+      blockNumber: data.blockNumber,
+    })
   }
 
   /**
@@ -331,4 +316,5 @@ class TransactNote extends Note {
   }
 }
 
+export type { TransactNoteParams }
 export { TransactNote }

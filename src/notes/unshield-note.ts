@@ -2,9 +2,19 @@ import { decode, encode } from '@msgpack/msgpack'
 
 import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
-import type { TokenData, TokenType, Unshield } from './definitions'
+import type { TokenType, Unshield } from './definitions'
+import type { NoteParams } from './note'
 import { Note } from './note'
 import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils'
+
+/**
+ * Parameters for constructing an UnshieldNote.
+ */
+type UnshieldNoteParams = NoteParams & {
+  toAddress: string
+  hash: bigint
+  allowOverride: boolean
+}
 
 /**
  * Represents an Unshield note for converting private RAILGUN notes back into public assets.
@@ -34,27 +44,13 @@ class UnshieldNote extends Note {
 
   /**
    * Constructs a new UnshieldNote instance.
-   * @param notePublicKey - The note public key (same as toAddress)
-   * @param value - The note value
-   * @param tokenData - The token data
-   * @param random - Random value (16 bytes hex string)
-   * @param toAddress - The destination address
-   * @param hash - The note hash
-   * @param allowOverride - Whether to allow override
+   * @param params - The unshield note parameters
    */
-  constructor (
-    notePublicKey: string,
-    value: bigint,
-    tokenData: TokenData,
-    random: string,
-    toAddress: string,
-    hash: bigint,
-    allowOverride: boolean
-  ) {
-    super(notePublicKey, value, tokenData, random)
-    this.toAddress = toAddress
-    this.hash = hash
-    this.allowOverride = allowOverride
+  constructor (params: UnshieldNoteParams) {
+    super(params)
+    this.toAddress = params.toAddress
+    this.hash = params.hash
+    this.allowOverride = params.allowOverride
   }
 
   /**
@@ -85,15 +81,15 @@ class UnshieldNote extends Note {
   static deserialize (bytes: Uint8Array): UnshieldNote {
     const { notePublicKey, random, value, token, toAddress, hash, allowOverride } = decode(bytes) as any
 
-    return new UnshieldNote(
+    return new UnshieldNote({
       notePublicKey,
-      BigInt(value),
-      deserializeTokenData(token),
+      value: BigInt(value),
+      tokenData: deserializeTokenData(token),
       random,
       toAddress,
-      BigInt(hash),
-      allowOverride
-    )
+      hash: BigInt(hash),
+      allowOverride,
+    })
   }
 
   /**
@@ -136,15 +132,15 @@ class UnshieldNote extends Note {
     const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
     const hash = uint8ArrayToBigInt(Note.getHash(to, tokenHashBytes, amount + fee))
 
-    return new UnshieldNote(
-      toAddress,
-      amount,
+    return new UnshieldNote({
+      notePublicKey: toAddress,
+      value: amount,
       tokenData,
       random,
       toAddress,
       hash,
-      false // Default value
-    )
+      allowOverride: false,
+    })
   }
 
   /**
@@ -164,4 +160,5 @@ class UnshieldNote extends Note {
   }
 }
 
+export type { UnshieldNoteParams }
 export { UnshieldNote }

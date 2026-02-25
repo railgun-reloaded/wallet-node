@@ -4,10 +4,20 @@ import { AES } from '@railgun-reloaded/cryptography'
 import { hexToUint8Array, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
-import type { GeneratedCommitment, ShieldCommitment, TokenData } from './definitions'
+import type { GeneratedCommitment, ShieldCommitment } from './definitions'
 import { TokenType } from './definitions'
+import type { NoteParams } from './note'
 import { Note } from './note'
 import { deserializeTokenData, serializeTokenData } from './token-utils'
+
+/**
+ * Parameters for constructing a ShieldNote.
+ */
+type ShieldNoteParams = NoteParams & {
+  masterPublicKey: Uint8Array
+  shieldFee?: bigint | undefined
+  blockNumber?: number | undefined
+}
 
 /**
  * Represents a Shield note for converting public assets into private RAILGUN notes.
@@ -35,27 +45,13 @@ class ShieldNote extends Note {
 
   /**
    * Constructs a new ShieldNote instance.
-   * @param notePublicKey - The note public key
-   * @param value - The note value
-   * @param tokenData - The token data
-   * @param random - Random value (16 bytes hex string)
-   * @param masterPublicKey - The master public key
-   * @param shieldFee - Optional shield fee
-   * @param blockNumber - Optional block number
+   * @param params - The shield note parameters
    */
-  constructor (
-    notePublicKey: string,
-    value: bigint,
-    tokenData: TokenData,
-    random: string,
-    masterPublicKey: Uint8Array,
-    shieldFee?: bigint,
-    blockNumber?: number
-  ) {
-    super(notePublicKey, value, tokenData, random)
-    this.masterPublicKey = masterPublicKey
-    this.shieldFee = shieldFee
-    this.blockNumber = blockNumber
+  constructor (params: ShieldNoteParams) {
+    super(params)
+    this.masterPublicKey = params.masterPublicKey
+    this.shieldFee = params.shieldFee
+    this.blockNumber = params.blockNumber
   }
 
   /**
@@ -87,15 +83,15 @@ class ShieldNote extends Note {
   static deserialize (bytes: Uint8Array): ShieldNote {
     const { notePublicKey, masterPublicKey, token, value, random, shieldFee, blockNumber } = decode(bytes) as any
 
-    return new ShieldNote(
+    return new ShieldNote({
       notePublicKey,
-      BigInt(value),
-      deserializeTokenData(token),
+      value: BigInt(value),
+      tokenData: deserializeTokenData(token),
       random,
-      hexToUint8Array(masterPublicKey),
-      shieldFee ? BigInt(shieldFee) : undefined,
-      blockNumber
-    )
+      masterPublicKey: hexToUint8Array(masterPublicKey),
+      shieldFee: shieldFee ? BigInt(shieldFee) : undefined,
+      blockNumber,
+    })
   }
 
   /**
@@ -211,17 +207,16 @@ class ShieldNote extends Note {
       uint8ArrayToHex(tokenSubID)
     )
 
-    const shieldFee = 'fee' in commitment ? commitment.fee : undefined
-
-    return new ShieldNote(
-      uint8ArrayToHex(npk),
+    return new ShieldNote({
+      notePublicKey: uint8ArrayToHex(npk),
       value,
       tokenData,
       random,
       masterPublicKey,
-      shieldFee
-    )
+      shieldFee: 'fee' in commitment ? commitment.fee : undefined,
+    })
   }
 }
 
+export type { ShieldNoteParams }
 export { ShieldNote }

@@ -41,13 +41,13 @@ hook('setup cryptography libs', async (t) => {
 
 test('shield-note - create ShieldNote', async (t) => {
   const masterPublicKey = randomBytes(32)
-  const shieldNote = new ShieldNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
-    masterPublicKey
-  )
+  const shieldNote = new ShieldNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
+    masterPublicKey,
+  })
 
   t.ok(shieldNote instanceof ShieldNote, 'should create ShieldNote instance')
   t.is(shieldNote.value, TEST_VALUE, 'should set value correctly')
@@ -71,13 +71,13 @@ test('shield-note - create ShieldNote', async (t) => {
 
 test('shield-note - serialize and deserialize', async (t) => {
   const masterPublicKey = randomBytes(32)
-  const shieldNote = new ShieldNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
-    masterPublicKey
-  )
+  const shieldNote = new ShieldNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
+    masterPublicKey,
+  })
   const serialized = shieldNote.serialize()
 
   t.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')

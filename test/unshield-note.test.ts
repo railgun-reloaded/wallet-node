@@ -34,15 +34,15 @@ test('unshield-note - create UnshieldNote', async (t) => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
   const hash = 99999999999999999999n
 
-  const unshieldNote = new UnshieldNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const unshieldNote = new UnshieldNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     toAddress,
     hash,
-    false
-  )
+    allowOverride: false,
+  })
 
   t.ok(
     unshieldNote instanceof UnshieldNote,
@@ -58,15 +58,15 @@ test('unshield-note - serialize and deserialize', async (t) => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
   const hash = 99999999999999999999n
 
-  const unshieldNote = new UnshieldNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const unshieldNote = new UnshieldNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     toAddress,
     hash,
-    true
-  )
+    allowOverride: true,
+  })
   const serialized = unshieldNote.serialize()
 
   t.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')

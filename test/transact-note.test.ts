@@ -65,14 +65,14 @@ test('transact-note - create TransactNote', async (t) => {
     viewingPublicKey: new Uint8Array(32),
   }
 
-  const transactNote = new TransactNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const transactNote = new TransactNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     hash,
-    receiverAddressData
-  )
+    receiverAddressData,
+  })
 
   t.ok(
     transactNote instanceof TransactNote,
@@ -95,14 +95,14 @@ test('transact-note - serialize and deserialize', async (t) => {
     viewingPublicKey: new Uint8Array(32),
   }
 
-  const transactNote = new TransactNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const transactNote = new TransactNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     hash,
-    receiverAddressData
-  )
+    receiverAddressData,
+  })
   const serialized = transactNote.serialize()
 
   t.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')
@@ -149,21 +149,21 @@ test('transact-note - serialize and deserialize with all optional fields', async
     viewingPublicKey: new Uint8Array(32).fill(0xbb),
   }
 
-  const transactNote = new TransactNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const transactNote = new TransactNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     hash,
     receiverAddressData,
     senderAddressData,
-    1, // outputType (BroadcasterFee)
-    'test-wallet', // walletSource
-    'aabbccdd11223344aabbccdd11223344', // senderRandom
-    'Hello memo', // memoText
-    '1000', // shieldFee
-    42 // blockNumber
-  )
+    outputType: 1,
+    walletSource: 'test-wallet',
+    senderRandom: 'aabbccdd11223344aabbccdd11223344',
+    memoText: 'Hello memo',
+    shieldFee: '1000',
+    blockNumber: 42,
+  })
 
   const serialized = transactNote.serialize()
   const deserialized = await TransactNote.deserialize(
@@ -354,21 +354,16 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
     viewingPublicKey: new Uint8Array(32),
   }
 
-  const transactNote = new TransactNote(
-    TEST_NPK,
-    TEST_VALUE,
-    ERC20_TOKEN_DATA,
-    TEST_RANDOM,
+  const transactNote = new TransactNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
     hash,
     receiverAddressData,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    'legacy memo',
-    undefined,
-    100
-  )
+    memoText: 'legacy memo',
+    blockNumber: 100,
+  })
 
   // Serialize with viewing private key directly
   const serialized = transactNote.serializeLegacy(viewingPrivateKey)

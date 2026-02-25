@@ -1,9 +1,20 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
 import { bigintToUint8Array, hexlify } from '../encoding'
+import { assertCryptoInitialized } from '../keys'
 
 import type { TokenData } from './definitions'
 import { assertValidNoteToken, computeTokenHash } from './token-utils'
+
+/**
+ * Base parameters shared by all note types.
+ */
+type NoteParams = {
+  notePublicKey: string
+  value: bigint
+  tokenData: TokenData
+  random: string
+}
 
 /**
  * Abstract base class for all note types.
@@ -37,24 +48,16 @@ abstract class Note {
 
   /**
    * Constructs a new Note instance.
-   * @param notePublicKey - The note public key
-   * @param value - The note value
-   * @param tokenData - The token data
-   * @param random - Random value (16 bytes hex string)
+   * @param params - The note parameters
    */
-  constructor (
-    notePublicKey: string,
-    value: bigint,
-    tokenData: TokenData,
-    random: string
-  ) {
-    Note.assertValidRandom(random)
-    assertValidNoteToken(tokenData, value)
-    this.notePublicKey = notePublicKey
-    this.value = value
-    this.tokenData = tokenData
-    this.tokenHash = computeTokenHash(tokenData)
-    this.random = random
+  constructor (params: NoteParams) {
+    Note.assertValidRandom(params.random)
+    assertValidNoteToken(params.tokenData, params.value)
+    this.notePublicKey = params.notePublicKey
+    this.value = params.value
+    this.tokenData = params.tokenData
+    this.tokenHash = computeTokenHash(params.tokenData)
+    this.random = params.random
   }
 
   /**
@@ -78,8 +81,10 @@ abstract class Note {
    * @param tokenHash - The token hash as a Uint8Array
    * @param value - The note value as a bigint
    * @returns The note hash as a Uint8Array
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
    */
   static getHash (npk: Uint8Array, tokenHash: Uint8Array, value: bigint): Uint8Array {
+    assertCryptoInitialized()
     const valueBytes = bigintToUint8Array(value, 16) // 128-bit value
     return poseidon([npk, tokenHash, valueBytes])
   }
@@ -92,4 +97,5 @@ abstract class Note {
   abstract serialize (): Uint8Array
 }
 
+export type { NoteParams }
 export { Note }
