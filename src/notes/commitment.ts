@@ -98,32 +98,30 @@ async function decryptCommitmentAsReceiverOrSender (
   viewingPrivateKey: Uint8Array,
   tokenDataGetter: TokenDataGetter
 ): Promise<{ receiverData: DecryptedCommitmentData | null, senderData: DecryptedCommitmentData | null }> {
-  let receiverData: DecryptedCommitmentData | null = null
-  let senderData: DecryptedCommitmentData | null = null
-
   // ECDH: to derive the shared key, combine your private key with the OTHER
   // party's blinded public key. The receiver uses the sender's blinded key and vice versa.
-  if (blindedSenderViewingKey.length > 0) {
-    receiverData = await decryptCommitment(
-      txidVersion,
-      chain,
-      ciphertext,
-      blindedSenderViewingKey,
-      viewingPrivateKey,
-      tokenDataGetter
-    )
-  }
-
-  if (blindedReceiverViewingKey.length > 0) {
-    senderData = await decryptCommitment(
-      txidVersion,
-      chain,
-      ciphertext,
-      blindedReceiverViewingKey,
-      viewingPrivateKey,
-      tokenDataGetter
-    )
-  }
+  const [receiverData, senderData] = await Promise.all([
+    blindedSenderViewingKey.length > 0
+      ? decryptCommitment(
+        txidVersion,
+        chain,
+        ciphertext,
+        blindedSenderViewingKey,
+        viewingPrivateKey,
+        tokenDataGetter
+      )
+      : null,
+    blindedReceiverViewingKey.length > 0
+      ? decryptCommitment(
+        txidVersion,
+        chain,
+        ciphertext,
+        blindedReceiverViewingKey,
+        viewingPrivateKey,
+        tokenDataGetter
+      )
+      : null,
+  ])
 
   return { receiverData, senderData }
 }
