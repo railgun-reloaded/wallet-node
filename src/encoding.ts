@@ -166,4 +166,20 @@ const hexlify = (data: string | bigint | number | Uint8Array): string => {
   return hexString.toLowerCase()
 }
 
-export { xorBytesInPlace, bigintToUint8Array, uint8ArrayToBigInt, sha512HMAC, uint8ArrayToHex, hexToUint8Array, formatToByteLength, bigintToHex, hexlify }
+/**
+ * Left-pads a Uint8Array with zeros to a target byte length.
+ * Returns the input unchanged if already at or above the target length.
+ * @param bytes - The input Uint8Array
+ * @param targetLength - Desired length in bytes
+ * @returns A Uint8Array of exactly targetLength bytes, zero-padded on the left
+ */
+const padUint8Array = (bytes: Uint8Array, targetLength: number): Uint8Array => {
+  if (bytes.length >= targetLength) {
+    return bytes
+  }
+  const padded = new Uint8Array(targetLength)
+  padded.set(bytes, targetLength - bytes.length)
+  return padded
+}
+
+export { xorBytesInPlace, bigintToUint8Array, uint8ArrayToBigInt, sha512HMAC, uint8ArrayToHex, hexToUint8Array, formatToByteLength, bigintToHex, hexlify, padUint8Array }
