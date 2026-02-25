@@ -1,5 +1,6 @@
 import { hook, test } from 'brittle'
 
+import { hexToUint8Array, uint8ArrayToHex } from '../src/encoding'
 import {
   adjustBytes25519,
   getBlindingScalar,
@@ -214,4 +215,157 @@ test('keys - getSharedSymmetricKey', async (t) => {
   if (sharedKey) {
     t.is(sharedKey.length, 32, 'shared key should be 32 bytes')
   }
+})
+
+test('keys - initializeCryptographyLibs double-init is idempotent', async (t) => {
+  await initializeCryptographyLibs()
+  t.pass('second init should not throw')
+})
+
+test('keys - getSharedSymmetricKey with invalid public key returns null', async (t) => {
+  const privateKey = new Uint8Array(32).fill(1)
+  const invalidPublicKey = new Uint8Array(32).fill(0xff)
+
+  const result = await getSharedSymmetricKey(privateKey, invalidPublicKey)
+  t.is(result, null, 'should return null for invalid public key')
+})
+
+test('keys - unblindNoteKey with invalid point returns null', async (t) => {
+  const invalidPoint = new Uint8Array(32).fill(0xff)
+  const sharedRandom = new Uint8Array(32).fill(1)
+  const senderRandom = new Uint8Array(32).fill(2)
+
+  const result = unblindNoteKey(invalidPoint, sharedRandom, senderRandom)
+  t.is(result, null, 'should return null for invalid point')
+})
+
+test('keys - getNoteBlindingKeys with same sender/receiver key', async (t) => {
+  const privateKey = new Uint8Array(32).fill(5)
+  const publicKey = getPublicViewingKey(privateKey)
+
+  const sharedRandom = new Uint8Array(32).fill(3)
+  const senderRandom = new Uint8Array(32).fill(4)
+
+  const result = getNoteBlindingKeys(publicKey, publicKey, sharedRandom, senderRandom)
+
+  t.ok(result.blindedSenderViewingKey instanceof Uint8Array, 'should return blinded sender key')
+  t.ok(result.blindedReceiverViewingKey instanceof Uint8Array, 'should return blinded receiver key')
+  t.alike(
+    result.blindedSenderViewingKey,
+    result.blindedReceiverViewingKey,
+    'blinded keys should be equal when sender and receiver are the same'
+  )
+})
+
+test('keys - ECDH shared key commutativity', async (t) => {
+  const { randomBytes } = await import('@noble/hashes/utils')
+
+  const sender = randomBytes(32)
+  const senderPublic = getPublicViewingKey(sender)
+
+  const receiver = randomBytes(32)
+  const receiverPublic = getPublicViewingKey(receiver)
+
+  const sharedRandom = randomBytes(32)
+  const senderRandom = new Uint8Array(32)
+
+  const { blindedSenderViewingKey, blindedReceiverViewingKey } = getNoteBlindingKeys(
+    senderPublic,
+    receiverPublic,
+    sharedRandom,
+    senderRandom
+  )
+
+  const k1 = await getSharedSymmetricKey(receiver, blindedSenderViewingKey)
+  const k2 = await getSharedSymmetricKey(sender, blindedReceiverViewingKey)
+
+  t.ok(k1, 'receiver should derive shared key')
+  t.ok(k2, 'sender should derive shared key')
+  t.alike(k1, k2, 'ECDH(receiver, blindedSender) should equal ECDH(sender, blindedReceiver)')
+})
+
+test('keys - unblind note keys roundtrip', async (t) => {
+  const { randomBytes } = await import('@noble/hashes/utils')
+
+  const sender = randomBytes(32)
+  const senderPublic = getPublicViewingKey(sender)
+
+  const receiver = randomBytes(32)
+  const receiverPublic = getPublicViewingKey(receiver)
+
+  const sharedRandom = randomBytes(32)
+  const senderRandom = new Uint8Array(32)
+
+  const { blindedSenderViewingKey, blindedReceiverViewingKey } = getNoteBlindingKeys(
+    senderPublic,
+    receiverPublic,
+    sharedRandom,
+    senderRandom
+  )
+
+  const senderUnblinded = unblindNoteKey(blindedSenderViewingKey, sharedRandom, senderRandom)
+  const receiverUnblinded = unblindNoteKey(blindedReceiverViewingKey, sharedRandom, senderRandom)
+
+  t.alike(senderUnblinded, senderPublic, 'unblinded sender key should match original')
+  t.alike(receiverUnblinded, receiverPublic, 'unblinded receiver key should match original')
+})
+
+test('keys - sender random blinding distinction', async (t) => {
+  const { randomBytes } = await import('@noble/hashes/utils')
+
+  const sender = randomBytes(32)
+  const senderPublic = getPublicViewingKey(sender)
+
+  const receiver = randomBytes(32)
+  const receiverPublic = getPublicViewingKey(receiver)
+
+  const sharedRandom = randomBytes(32)
+  const senderRandom = randomBytes(32)
+
+  const { blindedSenderViewingKey, blindedReceiverViewingKey } = getNoteBlindingKeys(
+    senderPublic,
+    receiverPublic,
+    sharedRandom,
+    senderRandom
+  )
+
+  const senderUnblindedWrongRandom = unblindNoteKey(
+    blindedSenderViewingKey,
+    sharedRandom,
+    new Uint8Array(32)
+  )
+  const senderUnblindedCorrectRandom = unblindNoteKey(
+    blindedSenderViewingKey,
+    sharedRandom,
+    senderRandom
+  )
+  const receiverUnblindedWrongRandom = unblindNoteKey(
+    blindedReceiverViewingKey,
+    sharedRandom,
+    new Uint8Array(32)
+  )
+  const receiverUnblindedCorrectRandom = unblindNoteKey(
+    blindedReceiverViewingKey,
+    sharedRandom,
+    senderRandom
+  )
+
+  t.not(senderUnblindedWrongRandom, null, 'wrong random still produces a key')
+  t.unlike(senderUnblindedWrongRandom, senderPublic, 'wrong random should not recover sender key')
+  t.alike(senderUnblindedCorrectRandom, senderPublic, 'correct random should recover sender key')
+  t.unlike(receiverUnblindedWrongRandom, receiverPublic, 'wrong random should not recover receiver key')
+  t.alike(receiverUnblindedCorrectRandom, receiverPublic, 'correct random should recover receiver key')
+})
+
+test('keys - getSharedSymmetricKey known vector', async (t) => {
+  const privateKeyA = hexToUint8Array('0123456789012345678901234567890123456789012345678901234567891234')
+  const blindedPubKeyB = hexToUint8Array('0987654321098765432109876543210987654321098765432109876543210987')
+
+  const result = await getSharedSymmetricKey(privateKeyA, blindedPubKeyB)
+  t.ok(result, 'should produce a shared key')
+  t.is(
+    uint8ArrayToHex(result!, false),
+    'fbb71adfede43b8a756939500c810d85b16cfbead66d126065639c0cec1fea56',
+    'shared key should match known vector'
+  )
 })
