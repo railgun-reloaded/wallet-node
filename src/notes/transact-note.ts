@@ -241,44 +241,48 @@ class TransactNote extends Note {
    * Legacy notes are always ERC20.
    * @param bytes - The serialized legacy note data
    * @param viewingPrivateKey - Viewing private key for decryption (32 bytes)
-   * @returns A new TransactNote instance
+   * @returns A new TransactNote instance, or null if decryption fails (wrong viewing key)
    */
   static deserializeLegacy (
     bytes: Uint8Array,
     viewingPrivateKey: Uint8Array
-  ): TransactNote {
-    const data = decode(bytes) as any
+  ): TransactNote | null {
+    try {
+      const data = decode(bytes) as any
 
-    const encryptedData = data.encryptedRandom as EncryptedData
-    const [ivTag, encryptedRandomData] = encryptedData
+      const encryptedData = data.encryptedRandom as EncryptedData
+      const [ivTag, encryptedRandomData] = encryptedData
 
-    const iv = hexToUint8Array('0x' + ivTag.slice(0, 32))
-    const tag = hexToUint8Array('0x' + ivTag.slice(32))
-    const encData = hexToUint8Array('0x' + encryptedRandomData)
+      const iv = hexToUint8Array('0x' + ivTag.slice(0, 32))
+      const tag = hexToUint8Array('0x' + ivTag.slice(32))
+      const encData = hexToUint8Array('0x' + encryptedRandomData)
 
-    const ciphertext: Ciphertext = { iv, tag, data: [encData] }
-    const decrypted = AES.decryptGCM(ciphertext, viewingPrivateKey)
-    const random = uint8ArrayToHex(decrypted[0] || new Uint8Array(16))
+      const ciphertext: Ciphertext = { iv, tag, data: [encData] }
+      const decrypted = AES.decryptGCM(ciphertext, viewingPrivateKey)
+      const random = uint8ArrayToHex(decrypted[0] || new Uint8Array(16))
 
-    // Legacy notes are always ERC20
-    const tokenData = getTokenDataERC20(data.tokenHash)
+      // Legacy notes are always ERC20
+      const tokenData = getTokenDataERC20(data.tokenHash)
 
-    const receiverAddressData = parse0zkAddress(data.recipientAddress)
+      const receiverAddressData = parse0zkAddress(data.recipientAddress)
 
-    const npkBytes = hexToUint8Array(data.npk)
-    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
+      const npkBytes = hexToUint8Array(data.npk)
+      const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
+      const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
 
-    return new TransactNote({
-      notePublicKey: data.npk,
-      value: BigInt(data.value),
-      tokenData,
-      random,
-      hash,
-      receiverAddressData,
-      memoText: data.memoText,
-      blockNumber: data.blockNumber,
-    })
+      return new TransactNote({
+        notePublicKey: data.npk,
+        value: BigInt(data.value),
+        tokenData,
+        random,
+        hash,
+        receiverAddressData,
+        memoText: data.memoText,
+        blockNumber: data.blockNumber,
+      })
+    } catch {
+      return null
+    }
   }
 
   /**

@@ -378,23 +378,44 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
     viewingPrivateKey
   )
 
-  t.ok(
-    deserialized instanceof TransactNote,
-    'should deserialize to TransactNote'
-  )
-  t.is(deserialized.value, TEST_VALUE, 'should preserve value')
+  t.ok(deserialized, 'should deserialize to TransactNote')
+  t.is(deserialized!.value, TEST_VALUE, 'should preserve value')
   // deserializeLegacy returns random with 0x prefix via uint8ArrayToHex
   t.is(
-    deserialized.random,
+    deserialized!.random,
     '0x' + TEST_RANDOM,
     'should preserve random through encryption'
   )
-  t.is(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
-  t.is(deserialized.memoText, 'legacy memo', 'should preserve memoText')
-  t.is(deserialized.blockNumber, 100, 'should preserve blockNumber')
+  t.is(deserialized!.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
+  t.is(deserialized!.memoText, 'legacy memo', 'should preserve memoText')
+  t.is(deserialized!.blockNumber, 100, 'should preserve blockNumber')
   t.alike(
-    deserialized.receiverAddressData.masterPublicKey,
+    deserialized!.receiverAddressData.masterPublicKey,
     receiverAddressData.masterPublicKey,
     'should preserve receiver masterPublicKey through bech32 roundtrip'
   )
+})
+
+test('transact-note - deserializeLegacy returns null for wrong viewing key', async (t) => {
+  const correctKey = randomBytes(32)
+  const wrongKey = randomBytes(32)
+
+  const receiverAddressData = {
+    masterPublicKey: randomBytes(32),
+    viewingPublicKey: new Uint8Array(32),
+  }
+
+  const transactNote = new TransactNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
+    hash: 99999999999999999999n,
+    receiverAddressData,
+  })
+
+  const serialized = transactNote.serializeLegacy(correctKey)
+  const result = TransactNote.deserializeLegacy(serialized, wrongKey)
+
+  t.is(result, null, 'should return null when decryption fails with wrong key')
 })

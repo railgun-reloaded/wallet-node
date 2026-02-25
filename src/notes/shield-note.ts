@@ -103,25 +103,29 @@ class ShieldNote extends Note {
    * @param commitment - The GeneratedCommitment object
    * @param viewingPrivateKey - The wallet's viewing private key for decryption
    * @param masterPublicKey - The master public key
-   * @returns A new ShieldNote instance
+   * @returns A new ShieldNote instance, or null if decryption fails (wrong viewing key)
    */
   static fromGeneratedCommitment (
     commitment: GeneratedCommitment,
     viewingPrivateKey: Uint8Array,
     masterPublicKey: Uint8Array
-  ): ShieldNote {
+  ): ShieldNote | null {
     const ivTag = commitment.encryptedRandom?.[0]
     const encryptedData = commitment.encryptedRandom?.[1]
     if (!ivTag || !encryptedData) {
       throw new Error('Missing encryptedRandom data in GeneratedCommitment')
     }
 
-    const iv = ivTag.slice(0, 16)
-    const tag = ivTag.slice(16, 32)
-    const decrypted = AES.decryptGCM({ iv, tag, data: [encryptedData] }, viewingPrivateKey)
-    const randomBytes = decrypted[0]!
+    try {
+      const iv = ivTag.slice(0, 16)
+      const tag = ivTag.slice(16, 32)
+      const decrypted = AES.decryptGCM({ iv, tag, data: [encryptedData] }, viewingPrivateKey)
+      const randomBytes = decrypted[0]!
 
-    return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
+      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
+    } catch {
+      return null
+    }
   }
 
   /**
