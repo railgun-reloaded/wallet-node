@@ -40,3 +40,13 @@ test('wallet-info - case insensitive encoding', (t) => {
   const decoded = WalletInfo.decodeWalletSource(encoded)
   t.is(decoded, 'memo wallet', 'Should lowercase the input')
 })
+
+test('wallet-info - decode all-zero bytes returns empty string', (t) => {
+  const decoded = WalletInfo.decodeWalletSource(new Uint8Array(4))
+  t.is(decoded, '', 'all-zero bytes should decode to empty string')
+})
+
+test('wallet-info - decode single zero byte returns empty string', (t) => {
+  const decoded = WalletInfo.decodeWalletSource(new Uint8Array([0]))
+  t.is(decoded, '', 'single zero byte should decode to empty string')
+})

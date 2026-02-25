@@ -1,10 +1,11 @@
 import { randomBytes } from '@noble/hashes/utils'
 import { hook, test } from 'brittle'
 
-import { hexToUint8Array, hexlify } from '../src/encoding'
+import { hexToUint8Array, hexlify, uint8ArrayToBigInt } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import type { TokenDataGetter } from '../src/notes/definitions'
 import { ChainType, TXIDVersion } from '../src/notes/definitions'
+import { Note } from '../src/notes/note'
 import { computeTokenHash } from '../src/notes/token-utils'
 import { TransactNote } from '../src/notes/transact-note'
 
@@ -416,4 +417,30 @@ test('transact-note - deserializeLegacy returns null for wrong viewing key', asy
   const result = TransactNote.deserializeLegacy(serialized, wrongKey)
 
   t.is(result, null, 'should return null when decryption fails with wrong key')
+})
+
+test('transact-note - deserializeLegacy with malformed data returns null', async (t) => {
+  const result = TransactNote.deserializeLegacy(new Uint8Array(100), randomBytes(32))
+  t.is(result, null, 'should return null for garbage data')
+})
+
+test('transact-note - fromCommitment hash matches Note.getHash', async (t) => {
+  const receiverAddressData = {
+    masterPublicKey: randomBytes(32),
+    viewingPublicKey: new Uint8Array(32),
+  }
+
+  const transactNote = TransactNote.fromCommitment(
+    TEST_RANDOM,
+    TEST_NPK,
+    TEST_VALUE,
+    ERC20_TOKEN_DATA,
+    receiverAddressData
+  )
+
+  const npkBytes = hexToUint8Array(TEST_NPK)
+  const tokenHashBytes = hexToUint8Array(computeTokenHash(ERC20_TOKEN_DATA))
+  const expectedHash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, TEST_VALUE))
+
+  t.is(transactNote.hash, expectedHash, 'fromCommitment hash should match Note.getHash')
 })

@@ -12,6 +12,7 @@ import {
   computeTokenHashNFT,
   deserializeTokenData,
   getReadableTokenAddress,
+  getTokenDataERC20,
   serializeTokenData,
 } from '../src/notes/token-utils'
 
@@ -265,4 +266,102 @@ test('token-utils - computeTokenHash NFT properties', (t) => {
   // computeTokenHashNFT directly should match computeTokenHash
   const directHash = computeTokenHashNFT(ERC721_TOKEN_DATA)
   t.is(directHash, erc721Hash, 'computeTokenHashNFT should match computeTokenHash for ERC721')
+})
+
+test('token-utils - deserializeTokenData null input', (t) => {
+  t.exception(() => {
+    deserializeTokenData(null)
+  }, 'should throw for null')
+})
+
+test('token-utils - deserializeTokenData undefined input', (t) => {
+  t.exception(() => {
+    deserializeTokenData(undefined)
+  }, 'should throw for undefined')
+})
+
+test('token-utils - deserializeTokenData missing fields', (t) => {
+  t.exception(() => {
+    deserializeTokenData({ tokenType: 0, tokenSubID: new Uint8Array(32) })
+  }, 'should throw for missing tokenAddress')
+})
+
+test('token-utils - deserializeTokenData invalid tokenType', (t) => {
+  t.exception(() => {
+    deserializeTokenData({ tokenAddress: TEST_TOKEN_ADDRESS, tokenType: -1, tokenSubID: new Uint8Array(32) })
+  }, 'should throw for negative tokenType')
+
+  t.exception(() => {
+    deserializeTokenData({ tokenAddress: TEST_TOKEN_ADDRESS, tokenType: 3, tokenSubID: new Uint8Array(32) })
+  }, 'should throw for tokenType 3')
+})
+
+test('token-utils - deserializeTokenData legacy string format', (t) => {
+  const data = {
+    tokenAddress: '0x1234567890123456789012345678901234567890',
+    tokenType: 0,
+    tokenSubID: '0',
+  }
+  const result = deserializeTokenData(data)
+  t.is(result.tokenType, 0, 'should parse tokenType')
+  t.alike(result.tokenAddress, TEST_TOKEN_ADDRESS, 'should convert string address to Uint8Array')
+  t.alike(result.tokenSubID, new Uint8Array(32), 'should convert string subID to Uint8Array')
+})
+
+test('token-utils - getTokenDataERC20 with 20-byte address', (t) => {
+  const result = getTokenDataERC20('0x1234567890123456789012345678901234567890')
+  t.is(result.tokenType, 0, 'should be ERC20')
+  t.alike(result.tokenAddress, TEST_TOKEN_ADDRESS, 'should preserve 20-byte address')
+  t.alike(result.tokenSubID, new Uint8Array(32), 'should have zero subID')
+})
+
+test('token-utils - getTokenDataERC20 extracts last 20 bytes from 32-byte hash', (t) => {
+  const hash = '0x0000000000000000000000001234567890123456789012345678901234567890'
+  const result = getTokenDataERC20(hash)
+  t.alike(result.tokenAddress, TEST_TOKEN_ADDRESS, 'should extract last 20 bytes')
+})
+
+test('token-utils - assertValidNoteToken 19-byte address', (t) => {
+  t.exception(() => {
+    assertValidNoteToken({ tokenType: 0, tokenAddress: new Uint8Array(19), tokenSubID: new Uint8Array(32) }, 100n)
+  }, 'should throw for 19-byte address')
+})
+
+test('token-utils - assertValidNoteToken 21-byte address', (t) => {
+  t.exception(() => {
+    assertValidNoteToken({ tokenType: 0, tokenAddress: new Uint8Array(21), tokenSubID: new Uint8Array(32) }, 100n)
+  }, 'should throw for 21-byte address')
+})
+
+test('token-utils - assertValidNoteToken ERC721 value zero', (t) => {
+  t.exception(() => {
+    assertValidNoteToken({
+      tokenType: 1,
+      tokenAddress: TEST_TOKEN_ADDRESS,
+      tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    }, 0n)
+  }, 'should throw for ERC721 with value 0')
+})
+
+test('token-utils - assertValidNoteToken ERC1155 value zero passes', (t) => {
+  t.execution(() => {
+    assertValidNoteToken({
+      tokenType: 2,
+      tokenAddress: TEST_TOKEN_ADDRESS,
+      tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000005'),
+    }, 0n)
+  }, 'should not throw for ERC1155 with value 0')
+})
+
+test('token-utils - serializeTokenData bigint subID', (t) => {
+  const result = serializeTokenData(TEST_TOKEN_ADDRESS, 0, 0n)
+  t.alike(result.tokenSubID, new Uint8Array(32), 'bigint 0n produces 32 zero bytes')
+})
+
+test('token-utils - serializeTokenData short address padded', (t) => {
+  const short = hexToUint8Array('0xabcd')
+  const result = serializeTokenData(short, 0, new Uint8Array(32))
+  t.is(result.tokenAddress.length, 20, 'should pad to 20 bytes')
+  t.is(result.tokenAddress[18], 0xab, 'should left-pad correctly')
+  t.is(result.tokenAddress[19], 0xcd, 'should left-pad correctly')
 })

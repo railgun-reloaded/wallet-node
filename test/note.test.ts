@@ -71,3 +71,27 @@ test('Note.getHash - known vector and properties', async (t) => {
   const hash3 = Note.getHash(hexToUint8Array(address2), tokenHashBytes, BigInt('1000000000000000000'))
   t.not(uint8ArrayToHex(hash1), uint8ArrayToHex(hash3), 'different addresses should produce different hashes')
 })
+
+test('Note.getHash - zero value', (t) => {
+  const npkBytes = hexToUint8Array(TEST_NPK)
+  const tokenHashBytes = hexToUint8Array(computeTokenHash(ERC20_TOKEN_DATA))
+
+  const hash = Note.getHash(npkBytes, tokenHashBytes, 0n)
+  t.ok(hash instanceof Uint8Array, 'should return Uint8Array for zero value')
+  t.is(hash.length, 32, 'should be 32 bytes')
+})
+
+test('Note.getHash - determinism', (t) => {
+  const npkBytes = hexToUint8Array(TEST_NPK)
+  const tokenHashBytes = hexToUint8Array(computeTokenHash(ERC20_TOKEN_DATA))
+
+  const hash1 = Note.getHash(npkBytes, tokenHashBytes, 42n)
+  const hash2 = Note.getHash(npkBytes, tokenHashBytes, 42n)
+  t.alike(hash1, hash2, 'same inputs should produce same hash')
+})
+
+test('Note.assertValidRandom - empty string', (t) => {
+  t.exception(() => {
+    Note.assertValidRandom('')
+  }, 'should throw for empty string')
+})

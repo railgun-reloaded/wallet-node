@@ -206,3 +206,84 @@ test('unshield-note - getAmountFeeFromValue', (t) => {
   t.is(zeroFee.fee, 0n, 'should return zero fee for zero basis points')
   t.is(zeroFee.amount, 10000n, 'should return full amount for zero basis points')
 })
+
+test('unshield-note - serialize and deserialize ERC721', async (t) => {
+  const erc721TokenData = {
+    tokenType: 1,
+    tokenAddress: TEST_TOKEN_ADDRESS,
+    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+  }
+
+  const unshieldNote = new UnshieldNote({
+    notePublicKey: TEST_NPK,
+    value: 1n,
+    tokenData: erc721TokenData,
+    random: TEST_RANDOM,
+    toAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    hash: 12345n,
+    allowOverride: false,
+  })
+
+  const serialized = unshieldNote.serialize()
+  const deserialized = UnshieldNote.deserialize(serialized)
+
+  t.is(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
+  t.alike(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
+  t.is(deserialized.value, 1n, 'should preserve value')
+})
+
+test('unshield-note - fromUnshield with zero amount and fee', async (t) => {
+  const unshieldData = {
+    actionType: ActionType.Unshield,
+    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    token: {
+      id: new Uint8Array(32),
+      tokenAddress: TEST_TOKEN_ADDRESS,
+      tokenType: 'ERC20',
+      tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
+    },
+    amount: 0n,
+    fee: 0n,
+    eventLogIndex: 0,
+  }
+
+  const note = UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
+  t.is(note.value, 0n, 'should handle zero amount')
+  t.ok(note.hash >= 0n, 'should compute valid hash')
+})
+
+test('unshield-note - getAmountFeeFromValue zero value', (t) => {
+  const { amount, fee } = UnshieldNote.getAmountFeeFromValue(0n, 25n)
+  t.is(fee, 0n, 'fee of zero value is zero')
+  t.is(amount, 0n, 'amount of zero value is zero')
+})
+
+test('unshield-note - getAmountFeeFromValue 100% fee', (t) => {
+  const { amount, fee } = UnshieldNote.getAmountFeeFromValue(10000n, 10000n)
+  t.is(fee, 10000n, 'fee should equal full value')
+  t.is(amount, 0n, 'amount should be zero')
+})
+
+test('unshield-note - getAmountFeeFromValue over 100% fee', (t) => {
+  const { amount, fee } = UnshieldNote.getAmountFeeFromValue(10000n, 15000n)
+  t.is(fee, 15000n, 'fee exceeds value')
+  t.is(amount, -5000n, 'amount goes negative')
+})
+
+test('unshield-note - getAmountFeeFromValue boundary thresholds', (t) => {
+  const below1 = UnshieldNote.getAmountFeeFromValue(100n, 25n)
+  t.is(below1.fee, 0n, 'fee rounds to 0 for small values')
+  t.is(below1.amount, 100n, 'full amount preserved below threshold')
+
+  const below2 = UnshieldNote.getAmountFeeFromValue(399n, 25n)
+  t.is(below2.fee, 0n, 'fee still 0 at 399')
+  t.is(below2.amount, 399n, 'full amount at 399')
+
+  const atThreshold = UnshieldNote.getAmountFeeFromValue(400n, 25n)
+  t.is(atThreshold.fee, 1n, 'fee becomes 1 at 400')
+  t.is(atThreshold.amount, 399n, 'amount is 399 at threshold')
+
+  const above = UnshieldNote.getAmountFeeFromValue(10001n, 25n)
+  t.is(above.fee, 25n, 'fee is 25 for 10001')
+  t.is(above.amount, 9976n, 'amount is 9976 for 10001')
+})

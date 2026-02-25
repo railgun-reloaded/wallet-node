@@ -1,8 +1,14 @@
 import { randomBytes } from '@noble/hashes/utils'
-import { test } from 'brittle'
+import { hook, test } from 'brittle'
 
+import { initializeCryptographyLibs } from '../src/keys'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions'
 import { Memo } from '../src/notes/memo'
+
+hook('setup cryptography libs', async (t) => {
+  await initializeCryptographyLibs()
+  t.pass('cryptography libraries initialized')
+})
 
 test('memo - encode and decode undefined memo text', (t) => {
   const encoded = Memo.encodeMemoText(undefined)
@@ -113,4 +119,63 @@ test('memo - annotation data roundtrip for all output types', async (t) => {
     t.ok(decrypted !== null, `should decrypt outputType ${outputType}`)
     t.is(decrypted!.outputType, outputType, `should recover outputType ${outputType}`)
   }
+})
+
+test('memo - decodeMemoText with single byte', (t) => {
+  const encoded = new Uint8Array([0x41]) // 'A'
+  const decoded = Memo.decodeMemoText(encoded)
+  t.is(decoded, 'A', 'should decode single byte')
+})
+
+test('memo - decodeMemoText with unicode CJK and Arabic', (t) => {
+  const text = '\u4e16\u754c \u0645\u0631\u062d\u0628\u0627'
+  const encoded = Memo.encodeMemoText(text)
+  const decoded = Memo.decodeMemoText(encoded)
+  t.is(decoded, text, 'should roundtrip CJK and Arabic')
+})
+
+test('memo - encodeMemoText / decodeMemoText roundtrip with long text', (t) => {
+  const text = 'a'.repeat(10000)
+  const encoded = Memo.encodeMemoText(text)
+  const decoded = Memo.decodeMemoText(encoded)
+  t.is(decoded, text, 'should roundtrip 10KB text')
+})
+
+test('memo - encryptAnnotationData with empty walletSource', (t) => {
+  const key = new Uint8Array(32).fill(1)
+  const encrypted = Memo.encryptAnnotationData(
+    OutputType.Transfer,
+    '1234567890abcde1234567890abcde',
+    '',
+    key
+  )
+  t.is(encrypted.length, 64, 'should produce 64-byte output with empty walletSource')
+
+  const decrypted = Memo.decryptAnnotationData(encrypted, key)
+  t.ok(decrypted, 'should decrypt')
+  t.is(decrypted!.walletSource, undefined, 'walletSource should be undefined for empty source')
+})
+
+test('memo - decryptAnnotationData with 32-byte annotationData (single block)', (t) => {
+  const key = new Uint8Array(32).fill(1)
+  const encrypted = Memo.encryptAnnotationData(
+    OutputType.Transfer,
+    '1234567890abcde1234567890abcde',
+    'test',
+    key
+  )
+
+  const singleBlock = encrypted.slice(0, 32)
+  const result = Memo.decryptAnnotationData(singleBlock, key)
+
+  t.ok(result !== null, 'should decrypt single-block annotation')
+  if (result) {
+    t.is(result.walletSource, undefined, 'walletSource should be undefined for single block')
+  }
+})
+
+test('memo - decryptSenderRandom with empty annotationData', (t) => {
+  const key = new Uint8Array(32).fill(1)
+  const result = Memo.decryptSenderRandom(new Uint8Array(0), key)
+  t.is(result, MEMO_SENDER_RANDOM_NULL, 'should return MEMO_SENDER_RANDOM_NULL for empty data')
 })

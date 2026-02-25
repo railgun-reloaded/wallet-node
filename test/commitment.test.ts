@@ -318,3 +318,135 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
   t.is(fullResult.receiverData!.value, noteValue, 'receiver should recover value via full function')
   t.is(fullResult.senderData, null, 'receiver should not appear as sender')
 })
+
+test('commitment - decryptCommitment with ciphertext data < 3 blocks returns null', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
+
+  const senderPrivateKey = randomBytes(32)
+  const senderPublicKey = getPublicViewingKey(senderPrivateKey)
+
+  const sharedRandom = randomBytes(32)
+  const senderRandom = new Uint8Array(32)
+
+  const { blindedReceiverViewingKey } = getNoteBlindingKeys(
+    senderPublicKey,
+    viewingPublicKey,
+    sharedRandom,
+    senderRandom
+  )
+
+  const sharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
+  t.ok(sharedKey, 'should derive shared key')
+
+  const ciphertext = AES.encryptGCM([randomBytes(32), randomBytes(32)], sharedKey!)
+
+  const result = await decryptCommitment(
+    TXIDVersion.V2_PoseidonMerkle,
+    TEST_CHAIN,
+    ciphertext,
+    blindedReceiverViewingKey,
+    viewingPrivateKey,
+    mockTokenDataGetter
+  )
+
+  t.is(result, null, 'should return null when ciphertext has < 3 data blocks')
+})
+
+test('commitment - decryptCommitment with randomValue block < 32 bytes returns null', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
+
+  const senderPrivateKey = randomBytes(32)
+  const senderPublicKey = getPublicViewingKey(senderPrivateKey)
+
+  const sharedRandom = randomBytes(32)
+  const senderRandom = new Uint8Array(32)
+
+  const { blindedReceiverViewingKey } = getNoteBlindingKeys(
+    senderPublicKey,
+    viewingPublicKey,
+    sharedRandom,
+    senderRandom
+  )
+
+  const sharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
+  t.ok(sharedKey, 'should derive shared key')
+
+  const ciphertext = AES.encryptGCM(
+    [randomBytes(32), randomBytes(32), randomBytes(16)],
+    sharedKey!
+  )
+
+  const result = await decryptCommitment(
+    TXIDVersion.V2_PoseidonMerkle,
+    TEST_CHAIN,
+    ciphertext,
+    blindedReceiverViewingKey,
+    viewingPrivateKey,
+    mockTokenDataGetter
+  )
+
+  t.is(result, null, 'should return null when randomValue block is < 32 bytes')
+})
+
+test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded receiver key', async (t) => {
+  const ciphertext = {
+    iv: randomBytes(16),
+    tag: randomBytes(16),
+    data: [randomBytes(100)],
+  }
+
+  const result = await decryptCommitmentAsReceiverOrSender(
+    TXIDVersion.V2_PoseidonMerkle,
+    TEST_CHAIN,
+    ciphertext,
+    new Uint8Array(0),
+    randomBytes(32),
+    randomBytes(32),
+    mockTokenDataGetter
+  )
+
+  t.is(result.senderData, null, 'sender data should be null with empty receiver key')
+})
+
+test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded sender key', async (t) => {
+  const ciphertext = {
+    iv: randomBytes(16),
+    tag: randomBytes(16),
+    data: [randomBytes(100)],
+  }
+
+  const result = await decryptCommitmentAsReceiverOrSender(
+    TXIDVersion.V2_PoseidonMerkle,
+    TEST_CHAIN,
+    ciphertext,
+    randomBytes(32),
+    new Uint8Array(0),
+    randomBytes(32),
+    mockTokenDataGetter
+  )
+
+  t.is(result.receiverData, null, 'receiver data should be null with empty sender key')
+})
+
+test('commitment - decryptCommitmentAsReceiverOrSender with both keys empty', async (t) => {
+  const ciphertext = {
+    iv: randomBytes(16),
+    tag: randomBytes(16),
+    data: [randomBytes(100)],
+  }
+
+  const result = await decryptCommitmentAsReceiverOrSender(
+    TXIDVersion.V2_PoseidonMerkle,
+    TEST_CHAIN,
+    ciphertext,
+    new Uint8Array(0),
+    new Uint8Array(0),
+    randomBytes(32),
+    mockTokenDataGetter
+  )
+
+  t.is(result.receiverData, null, 'receiver data should be null')
+  t.is(result.senderData, null, 'sender data should be null')
+})

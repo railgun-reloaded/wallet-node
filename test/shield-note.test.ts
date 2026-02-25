@@ -390,3 +390,100 @@ test('shield-note - fromGeneratedCommitment returns null for invalid tokenType',
   const result = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, new Uint8Array(32))
   t.is(result, null, 'should return null for invalid token type')
 })
+
+test('shield-note - serialize and deserialize ERC721', async (t) => {
+  const masterPublicKey = randomBytes(32)
+  const erc721TokenData = {
+    tokenType: 1,
+    tokenAddress: TEST_TOKEN_ADDRESS,
+    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+  }
+
+  const shieldNote = new ShieldNote({
+    notePublicKey: TEST_NPK,
+    value: 1n,
+    tokenData: erc721TokenData,
+    random: TEST_RANDOM,
+    masterPublicKey,
+  })
+  const serialized = shieldNote.serialize()
+  const deserialized = ShieldNote.deserialize(serialized)
+
+  t.is(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
+  t.alike(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
+  t.is(deserialized.value, 1n, 'should preserve value')
+})
+
+test('shield-note - serialize and deserialize with optional fields', async (t) => {
+  const masterPublicKey = randomBytes(32)
+  const shieldNote = new ShieldNote({
+    notePublicKey: TEST_NPK,
+    value: TEST_VALUE,
+    tokenData: ERC20_TOKEN_DATA,
+    random: TEST_RANDOM,
+    masterPublicKey,
+    shieldFee: 500n,
+    blockNumber: 12345678,
+  })
+
+  const serialized = shieldNote.serialize()
+  const deserialized = ShieldNote.deserialize(serialized)
+
+  t.is(deserialized.shieldFee, 500n, 'should preserve shieldFee')
+  t.is(deserialized.blockNumber, 12345678, 'should preserve blockNumber')
+})
+
+test('shield-note - fromGeneratedCommitment lowercase tokenType', async (t) => {
+  const viewingPrivateKey = randomBytes(32)
+  const noteRandom = randomBytes(16)
+
+  const ciphertext = AES.encryptGCM([noteRandom], viewingPrivateKey)
+  const ivTag = new Uint8Array(32)
+  ivTag.set(ciphertext.iv, 0)
+  ivTag.set(ciphertext.tag, 16)
+
+  const commitment = {
+    hash: new Uint8Array(32),
+    treeNumber: 0,
+    treePosition: 0,
+    preimage: {
+      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      value: 5000n,
+      token: {
+        id: new Uint8Array(32),
+        tokenAddress: TEST_TOKEN_ADDRESS,
+        tokenType: 'erc20',
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
+      },
+    },
+    encryptedRandom: [ivTag, ciphertext.data[0]!],
+  }
+
+  const result = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, randomBytes(32))
+  t.ok(result, 'should handle lowercase tokenType')
+  t.is(result!.tokenData.tokenType, 0, 'should convert to enum')
+})
+
+test('shield-note - fromShieldCommitment throws for short encryptedBundle', async (t) => {
+  const commitment = {
+    hash: new Uint8Array(32),
+    treeNumber: 0,
+    treePosition: 0,
+    preimage: {
+      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      value: 5000n,
+      token: {
+        id: new Uint8Array(32),
+        tokenAddress: TEST_TOKEN_ADDRESS,
+        tokenType: 'ERC20',
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
+      },
+    },
+    encryptedBundle: [new Uint8Array(32)],
+    shieldKey: randomBytes(32),
+  }
+
+  await t.exception(async () => {
+    await ShieldNote.fromShieldCommitment(commitment, randomBytes(32), randomBytes(32))
+  }, 'should throw for encryptedBundle with < 3 elements')
+})

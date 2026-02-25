@@ -1,10 +1,15 @@
 import { test } from 'brittle'
 
 import {
+  bigintToHex,
   bigintToUint8Array,
+  formatToByteLength,
   hexToUint8Array,
+  hexlify,
+  padUint8Array,
   sha512HMAC,
   uint8ArrayToBigInt,
+  uint8ArrayToHex,
   xorBytesInPlace
 } from '../src/encoding'
 
@@ -76,4 +81,143 @@ test('encoding - round trip conversions', (t) => {
   const backToBigInt = uint8ArrayToBigInt(asArray)
 
   t.is(backToBigInt, testBigInt, 'should convert bigint to array and back')
+})
+
+test('encoding - uint8ArrayToHex empty array', (t) => {
+  t.is(uint8ArrayToHex(new Uint8Array([])), '0x', 'empty array with prefix')
+  t.is(uint8ArrayToHex(new Uint8Array([]), false), '', 'empty array without prefix')
+})
+
+test('encoding - uint8ArrayToHex single bytes', (t) => {
+  t.is(uint8ArrayToHex(new Uint8Array([0])), '0x00', 'zero byte')
+  t.is(uint8ArrayToHex(new Uint8Array([255])), '0xff', '0xff byte')
+  t.is(uint8ArrayToHex(new Uint8Array([16])), '0x10', 'byte 16 zero-padded')
+})
+
+test('encoding - uint8ArrayToHex multiple bytes', (t) => {
+  t.is(uint8ArrayToHex(new Uint8Array([1, 2, 3])), '0x010203', 'with prefix')
+  t.is(uint8ArrayToHex(new Uint8Array([1, 2, 3]), false), '010203', 'without prefix')
+})
+
+test('encoding - padUint8Array shorter than target', (t) => {
+  t.alike(
+    padUint8Array(new Uint8Array([1]), 3),
+    new Uint8Array([0, 0, 1]),
+    'should left-pad with zeros'
+  )
+})
+
+test('encoding - padUint8Array equal to target', (t) => {
+  const input = new Uint8Array([1, 2])
+  t.is(padUint8Array(input, 2), input, 'should return same reference')
+})
+
+test('encoding - padUint8Array longer than target', (t) => {
+  const input = new Uint8Array([1, 2, 3])
+  t.is(padUint8Array(input, 2), input, 'should return unchanged')
+})
+
+test('encoding - padUint8Array empty input', (t) => {
+  t.alike(
+    padUint8Array(new Uint8Array([]), 3),
+    new Uint8Array([0, 0, 0]),
+    'should pad empty to target'
+  )
+})
+
+test('encoding - padUint8Array targetLength zero', (t) => {
+  const input = new Uint8Array([1, 2])
+  t.is(padUint8Array(input, 0), input, 'should return unchanged when target is 0')
+})
+
+test('encoding - hexlify string inputs', (t) => {
+  t.is(hexlify('0xAbCd'), 'abcd', 'strips 0x and lowercases')
+  t.is(hexlify('abcd'), 'abcd', 'no prefix unchanged')
+  t.is(hexlify('ABCD'), 'abcd', 'uppercase to lowercase')
+})
+
+test('encoding - hexlify bigint inputs', (t) => {
+  t.is(hexlify(256n), '0100', '256n → 0100')
+  t.is(hexlify(0n), '00', '0n → 00')
+  t.is(hexlify(255n), 'ff', '255n → ff')
+  t.is(hexlify(1n), '01', '1n → 01 (padded to even)')
+})
+
+test('encoding - hexlify number inputs', (t) => {
+  t.is(hexlify(256), '0100', '256 → 0100')
+  t.is(hexlify(0), '00', '0 → 00')
+})
+
+test('encoding - hexlify Uint8Array inputs', (t) => {
+  t.is(hexlify(new Uint8Array([255, 0, 1])), 'ff0001', 'bytes to hex')
+  t.is(hexlify(new Uint8Array([])), '', 'empty array → empty string')
+})
+
+test('encoding - formatToByteLength', (t) => {
+  t.is(formatToByteLength('ff', 4), '000000ff', 'pads short hex')
+  t.is(formatToByteLength('aabb', 2), 'aabb', 'equal length unchanged')
+  t.is(formatToByteLength('0x1234', 4), '00001234', 'strips 0x then pads')
+})
+
+test('encoding - bigintToHex', (t) => {
+  t.is(bigintToHex(0n, 1), '0x00', 'zero with 1 byte')
+  t.is(bigintToHex(255n, 1), '0xff', '255 with 1 byte')
+  t.is(bigintToHex(1n, 4), '0x00000001', 'small value with large byteLength')
+})
+
+test('encoding - hexToUint8Array empty inputs', (t) => {
+  t.alike(hexToUint8Array('0x'), new Uint8Array([]), 'empty with 0x prefix')
+  t.alike(hexToUint8Array(''), new Uint8Array([]), 'empty string')
+})
+
+test('encoding - hexToUint8Array uppercase', (t) => {
+  t.alike(hexToUint8Array('0xABCD'), new Uint8Array([0xab, 0xcd]), 'uppercase chars')
+})
+
+test('encoding - hexToUint8Array invalid characters', (t) => {
+  t.exception(() => {
+    hexToUint8Array('0xGGGG')
+  }, 'should throw for invalid hex characters')
+})
+
+test('encoding - bigintToUint8Array zero', (t) => {
+  const result = bigintToUint8Array(0n, 4)
+  t.alike(result, new Uint8Array([0, 0, 0, 0]), '0n produces all zeros')
+})
+
+test('encoding - bigintToUint8Array small value with length 1', (t) => {
+  t.alike(bigintToUint8Array(42n, 1), new Uint8Array([42]), 'single byte')
+})
+
+test('encoding - bigintToUint8Array overflow truncates high bits', (t) => {
+  const result = bigintToUint8Array(256n, 1)
+  t.alike(result, new Uint8Array([0]), 'value too large for 1 byte truncates')
+})
+
+test('encoding - uint8ArrayToBigInt empty array', (t) => {
+  t.is(uint8ArrayToBigInt(new Uint8Array([])), 0n, 'empty array → 0n')
+})
+
+test('encoding - sha512HMAC known vectors', (t) => {
+  const vectors = [
+    {
+      key: new Uint8Array([170]),
+      data: new Uint8Array([]),
+      expected: '4e9f386d58475d4e030c55c47f54ab3e2e5790d2aaaedc2f4465b5665a5307da3416778a481a09a2f18e1db63c26d741aa0a82af5a38a893bf9793fb7dea031e',
+    },
+    {
+      key: new Uint8Array([187]),
+      data: new Uint8Array([82, 65, 73, 76, 71, 85, 78]),
+      expected: '206aca0dd9a7d87873692ff48a91f0c495ab896c488c4af5e7062774e8841298ddc9eee9699a6930b545aebf6dd3504bcef331231368318da26bb3783fdcc086',
+    },
+    {
+      key: new Uint8Array([204]),
+      data: new Uint8Array([80, 82, 73, 86, 65, 67, 89, 32, 38, 32, 65, 78, 79, 78, 89, 77, 73, 84, 89]),
+      expected: 'b3513bb5230d933d8dc2cf28eddfa566bb76f49aa9bdf6f2475df0405feaaab4782d9d7a177ee9e32aa1e0af0ca0bb93a3c0312aa18788c7944a24f761bdcc1a',
+    },
+  ]
+
+  for (const v of vectors) {
+    t.is(uint8ArrayToHex(sha512HMAC(v.key, v.data), false), v.expected, `HMAC for key=0x${uint8ArrayToHex(v.key, false)}`)
+  }
 })
