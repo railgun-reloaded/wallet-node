@@ -122,7 +122,7 @@ class WalletNode {
     nullifyingKey: Uint8Array
   ): Uint8Array {
     assertCryptoInitialized()
-    return poseidon([...spendingPublicKey, nullifyingKey]) as Uint8Array
+    return poseidon([...spendingPublicKey, nullifyingKey])
   }
 
   /**
