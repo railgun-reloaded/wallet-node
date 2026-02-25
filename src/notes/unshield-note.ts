@@ -2,7 +2,8 @@ import { decode, encode } from '@msgpack/msgpack'
 
 import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
-import type { TokenType, Unshield } from './definitions'
+import type { Unshield } from './definitions'
+import { TokenType } from './definitions'
 import type { NoteParams } from './note'
 import { Note } from './note'
 import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils'
@@ -110,22 +111,22 @@ class UnshieldNote extends Note {
     let tokenTypeNum: TokenType
     switch (tokenType.toUpperCase()) {
       case 'ERC20':
-        tokenTypeNum = 0 // TokenType.ERC20
+        tokenTypeNum = TokenType.ERC20
         break
       case 'ERC721':
-        tokenTypeNum = 1 // TokenType.ERC721
+        tokenTypeNum = TokenType.ERC721
         break
       case 'ERC1155':
-        tokenTypeNum = 2 // TokenType.ERC1155
+        tokenTypeNum = TokenType.ERC1155
         break
       default:
         throw new Error(`Invalid tokenType: ${tokenType}`)
     }
 
     const tokenData = serializeTokenData(
-      uint8ArrayToHex(tokenAddress),
+      tokenAddress,
       tokenTypeNum,
-      uint8ArrayToHex(tokenSubID)
+      tokenSubID
     )
 
     const toAddress = uint8ArrayToHex(to)

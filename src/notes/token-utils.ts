@@ -1,30 +1,30 @@
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3'
 
-import { bigintToHex, bigintToUint8Array, formatToByteLength, hexToUint8Array, hexlify, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
+import { bigintToUint8Array, hexToUint8Array, padUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import type { TokenData } from './definitions'
 import { SNARK_PRIME, TokenType } from './definitions'
 
 /**
  * Computes the token hash for ERC20 tokens.
- * ERC20 token hash is simply the token address padded to 32 bytes.
- * @param tokenAddress - The ERC20 token address (hex string)
- * @returns The token hash as a hex string (32 bytes)
+ * ERC20 token hash is simply the token address left-padded to 32 bytes.
+ * @param tokenAddress - The ERC20 token address (20 bytes)
+ * @returns The token hash as a hex string (32 bytes, no 0x prefix)
  */
-function computeTokenHashERC20 (tokenAddress: string): string {
-  return formatToByteLength(hexlify(tokenAddress), 32)
+function computeTokenHashERC20 (tokenAddress: Uint8Array): string {
+  return uint8ArrayToHex(padUint8Array(tokenAddress, 32), false)
 }
 
 /**
  * Computes the token hash for NFT tokens (ERC721/ERC1155).
  * NFT token hash uses keccak256 of (tokenType + tokenAddress + tokenSubID) mod SNARK_PRIME.
  * @param tokenData - The NFT token data
- * @returns The token hash as a hex string (32 bytes)
+ * @returns The token hash as a hex string (32 bytes, no 0x prefix)
  */
 function computeTokenHashNFT (tokenData: TokenData): string {
   const tokenTypeBytes = bigintToUint8Array(BigInt(tokenData.tokenType), 32)
-  const tokenAddressBytes = hexToUint8Array(formatToByteLength(hexlify(tokenData.tokenAddress), 32))
-  const tokenSubIDBytes = hexToUint8Array(formatToByteLength(hexlify(tokenData.tokenSubID), 32))
+  const tokenAddressBytes = padUint8Array(tokenData.tokenAddress, 32)
+  const tokenSubIDBytes = padUint8Array(tokenData.tokenSubID, 32)
 
   // Combine: tokenType (32) + tokenAddress (32) + tokenSubID (32) = 96 bytes
   const combined = new Uint8Array(96)
@@ -65,73 +65,59 @@ function computeTokenHash (tokenData: TokenData): string {
  */
 function getReadableTokenAddress (tokenData: TokenData): string {
   switch (tokenData.tokenType) {
-    case TokenType.ERC20: {
-      const cleanAddress = hexlify(tokenData.tokenAddress)
-
-      const trimmed = cleanAddress.slice(-40) // Trim to 20 bytes (40 hex chars)
-      return '0x' + trimmed
-    }
+    case TokenType.ERC20:
+      return uint8ArrayToHex(tokenData.tokenAddress)
     case TokenType.ERC721:
     case TokenType.ERC1155:
-      return `${tokenData.tokenAddress} (${tokenData.tokenSubID})`
+      return `${uint8ArrayToHex(tokenData.tokenAddress)} (${uint8ArrayToHex(tokenData.tokenSubID)})`
     default:
       throw new Error(`Unrecognized token type: ${tokenData.tokenType}`)
   }
 }
 
-/** Null token sub ID for ERC20 tokens (no sub-identifier). */
-const TOKEN_SUB_ID_NULL = '0x00'
+/** Null token sub ID for ERC20 tokens (32 zero bytes). */
+const TOKEN_SUB_ID_NULL = new Uint8Array(32)
 
 /**
- * Normalizes a hex string to a fixed byte length with 0x prefix.
- * Left-pads with zeros, then trims from the left to the target length
- * (keeps the least-significant bytes).
- * @param hex - Input hex string (with or without 0x prefix)
- * @param byteLength - Target length in bytes
- * @returns Normalized hex string with 0x prefix
- */
-function formatHexToByteLength (hex: string, byteLength: number): string {
-  const padded = formatToByteLength(hex, byteLength)
-  return '0x' + padded.slice(-byteLength * 2)
-}
-
-/**
- * Serializes raw token components into a normalized TokenData object.
- * Inspired by the engine's serializeTokenData in note-util.ts.
- *
- * Normalizations applied:
- * - tokenAddress: formatted to 20 bytes (40 hex chars) with 0x prefix
- * - tokenType: coerced to number (handles bigint from contract calls)
- * - tokenSubID: formatted to 32 bytes (64 hex chars) with 0x prefix
- * @param tokenAddress - The token contract address (hex string)
+ * Normalizes raw token components into a TokenData object.
+ * @param tokenAddress - The token contract address (20 bytes)
  * @param tokenType - The token type (0=ERC20, 1=ERC721, 2=ERC1155), accepts bigint or number
- * @param tokenSubID - The token sub-identifier (hex string or bigint), 0 for ERC20
+ * @param tokenSubID - The token sub-identifier (32 bytes), or bigint
  * @returns A normalized TokenData object
  */
 function serializeTokenData (
-  tokenAddress: string,
+  tokenAddress: Uint8Array,
   tokenType: bigint | number,
-  tokenSubID: bigint | string
+  tokenSubID: Uint8Array | bigint
 ): TokenData {
+  const normalizedSubID = typeof tokenSubID === 'bigint'
+    ? bigintToUint8Array(tokenSubID, 32)
+    : padUint8Array(tokenSubID, 32)
+
   return {
-    tokenAddress: formatHexToByteLength(tokenAddress, 20),
+    tokenAddress: padUint8Array(tokenAddress, 20),
     tokenType: Number(tokenType),
-    tokenSubID: bigintToHex(BigInt(tokenSubID), 32),
+    tokenSubID: normalizedSubID,
   }
 }
 
 /**
  * Creates a normalized TokenData for an ERC20 token.
- * @param tokenAddress - The ERC20 token contract address (hex string)
+ * Accepts a hex string for legacy compatibility (e.g. token hash used as address).
+ * If the input is longer than 20 bytes (e.g. a 32-byte token hash), the last 20
+ * bytes are extracted as the address.
+ * @param tokenAddress - The ERC20 token contract address or hash (hex string)
  * @returns A normalized TokenData object with tokenType=0 and tokenSubID=0
  */
 function getTokenDataERC20 (tokenAddress: string): TokenData {
-  return serializeTokenData(tokenAddress, 0, TOKEN_SUB_ID_NULL)
+  const bytes = hexToUint8Array(tokenAddress)
+  const address = bytes.length > 20 ? bytes.slice(bytes.length - 20) : bytes
+  return serializeTokenData(address, 0, TOKEN_SUB_ID_NULL)
 }
 
 /**
  * Deserializes and validates token data from a plain object (e.g. from msgpack decoding).
- * Ensures all fields are present and properly formatted.
+ * Handles both Uint8Array (new format) and string (legacy format) fields.
  * @param data - The object containing serialized token data
  * @returns A validated and normalized TokenData object
  * @throws {Error} If required fields are missing or tokenType is invalid
@@ -149,11 +135,15 @@ function deserializeTokenData (data: any): TokenData {
     throw new Error(`Invalid token type: ${data.tokenType}`)
   }
 
-  return {
-    tokenAddress: formatHexToByteLength(String(data.tokenAddress), 20),
-    tokenType,
-    tokenSubID: bigintToHex(BigInt(data.tokenSubID), 32),
-  }
+  const tokenAddress = data.tokenAddress instanceof Uint8Array
+    ? padUint8Array(data.tokenAddress, 20)
+    : padUint8Array(hexToUint8Array(String(data.tokenAddress)), 20)
+
+  const tokenSubID = data.tokenSubID instanceof Uint8Array
+    ? padUint8Array(data.tokenSubID, 32)
+    : bigintToUint8Array(BigInt(data.tokenSubID), 32)
+
+  return { tokenAddress, tokenType, tokenSubID }
 }
 
 /**
@@ -163,43 +153,32 @@ function deserializeTokenData (data: any): TokenData {
  * @throws {Error} If validation fails
  */
 function assertValidNoteToken (tokenData: TokenData, value: bigint): void {
-  const tokenAddressLength = hexlify(tokenData.tokenAddress).length
+  if (tokenData.tokenAddress.length !== 20) {
+    throw new Error(
+      `Token address must be 20 bytes. Got ${tokenData.tokenAddress.length} bytes.`
+    )
+  }
 
   switch (tokenData.tokenType) {
     case TokenType.ERC20: {
-      if (tokenAddressLength !== 40 && tokenAddressLength !== 64) {
-        throw new Error(
-          `ERC20 address must be length 40 (20 bytes) or 64 (32 bytes). Got ${tokenData.tokenAddress}.`
-        )
-      }
-      if (BigInt(tokenData.tokenSubID) !== 0n) {
+      if (!tokenData.tokenSubID.every(b => b === 0)) {
         throw new Error('ERC20 note cannot have tokenSubID parameter.')
       }
       return
     }
 
     case TokenType.ERC721: {
-      if (tokenAddressLength !== 40) {
-        throw new Error(
-          `ERC721 address must be length 40 (20 bytes). Got ${tokenData.tokenAddress}.`
-        )
-      }
-      if (!tokenData.tokenSubID.length) {
+      if (tokenData.tokenSubID.length === 0) {
         throw new Error('ERC721 note must have tokenSubID parameter.')
       }
-      if (value !== BigInt(1)) {
+      if (value !== 1n) {
         throw new Error('ERC721 note must have value of 1.')
       }
       return
     }
 
     case TokenType.ERC1155: {
-      if (tokenAddressLength !== 40) {
-        throw new Error(
-          `ERC1155 address must be length 40 (20 bytes). Got ${tokenData.tokenAddress}.`
-        )
-      }
-      if (!tokenData.tokenSubID.length) {
+      if (tokenData.tokenSubID.length === 0) {
         throw new Error('ERC1155 note must have tokenSubID parameter.')
       }
       return

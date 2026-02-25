@@ -18,8 +18,8 @@ enum OutputType {
 
 type TokenData = {
   tokenType: TokenType;
-  tokenAddress: string;
-  tokenSubID: string;
+  tokenAddress: Uint8Array;
+  tokenSubID: Uint8Array;
 }
 
 enum TXIDVersion {

@@ -206,9 +206,9 @@ class ShieldNote extends Note {
     }
 
     const tokenData = serializeTokenData(
-      uint8ArrayToHex(tokenAddress),
+      tokenAddress,
       tokenTypeNum,
-      uint8ArrayToHex(tokenSubID)
+      tokenSubID
     )
 
     return new ShieldNote({
