@@ -5,9 +5,8 @@ import { hexToUint8Array } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import { UnshieldNote } from '../src/notes/unshield-note'
 
-const TEST_TOKEN_ADDRESS = '0x1234567890123456789012345678901234567890'
-const TEST_TOKEN_SUB_ID_ZERO =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
+const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
@@ -91,9 +90,9 @@ test('unshield-note - fromUnshield ERC20', async (t) => {
     to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
-      tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+      tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'ERC20',
-      tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+      tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
     },
     amount: TEST_VALUE,
     fee: 100n,
@@ -131,7 +130,7 @@ test('unshield-note - fromUnshield ERC721', async (t) => {
     to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
-      tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+      tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'ERC721',
       tokenSubID: hexToUint8Array(
         '0x0000000000000000000000000000000000000000000000000000000000000001'
@@ -157,7 +156,7 @@ test('unshield-note - fromUnshield ERC1155', async (t) => {
     to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
-      tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+      tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'ERC1155',
       tokenSubID: hexToUint8Array(
         '0x0000000000000000000000000000000000000000000000000000000000000005'
@@ -183,9 +182,9 @@ test('unshield-note - fromUnshield invalid tokenType throws', async (t) => {
     to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
-      tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+      tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'INVALID',
-      tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+      tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
     },
     amount: TEST_VALUE,
     fee: 0n,

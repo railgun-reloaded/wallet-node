@@ -14,9 +14,8 @@ import {
 import { ShieldNote } from '../src/notes/shield-note'
 import { computeTokenHash } from '../src/notes/token-utils'
 
-const TEST_TOKEN_ADDRESS = '0x1234567890123456789012345678901234567890'
-const TEST_TOKEN_SUB_ID_ZERO =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
+const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
@@ -98,7 +97,7 @@ test('shield-note - serialize and deserialize', async (t) => {
     ERC20_TOKEN_DATA.tokenType,
     'should preserve tokenType'
   )
-  t.is(
+  t.alike(
     deserialized.tokenData.tokenAddress,
     ERC20_TOKEN_DATA.tokenAddress,
     'should preserve tokenAddress'
@@ -125,9 +124,9 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
       value: 5000n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC20',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
       },
     },
     encryptedRandom: [ivTag, ciphertext.data[0]!],
@@ -191,7 +190,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
       value: 1n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC721',
         tokenSubID: hexToUint8Array(
           '0x0000000000000000000000000000000000000000000000000000000000000001'
@@ -254,9 +253,9 @@ test('shield-note - fromShieldCommitment returns null for wrong key', async (t) 
       value: 5000n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC20',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
       },
     },
     encryptedBundle: [ciphertext.data[0]!, ciphertext.data[1]!, ivTag],
@@ -288,7 +287,7 @@ test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', asyn
       value: 100n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC1155',
         tokenSubID: hexToUint8Array(
           '0x0000000000000000000000000000000000000000000000000000000000000005'
@@ -318,9 +317,9 @@ test('shield-note - fromGeneratedCommitment missing random throws', async (t) =>
       value: 5000n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC20',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
       },
     },
     encryptedRandom: [] as Uint8Array[],
@@ -350,9 +349,9 @@ test('shield-note - fromGeneratedCommitment returns null for wrong viewing key',
       value: 5000n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC20',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
       },
     },
     encryptedRandom: [ivTag, ciphertext.data[0]!],
@@ -380,9 +379,9 @@ test('shield-note - fromGeneratedCommitment returns null for invalid tokenType',
       value: 5000n,
       token: {
         id: new Uint8Array(32),
-        tokenAddress: hexToUint8Array(TEST_TOKEN_ADDRESS),
+        tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'INVALID',
-        tokenSubID: hexToUint8Array(TEST_TOKEN_SUB_ID_ZERO),
+        tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
       },
     },
     encryptedRandom: [ivTag, ciphertext.data[0]!],

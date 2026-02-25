@@ -25,14 +25,12 @@ import { computeTokenHash } from '../src/notes/token-utils'
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
 const TEST_VALUE = 1000000000000000000n // 1 ETH
 
-const TEST_TOKEN_ADDRESS = '0x1234567890123456789012345678901234567890'
-const TEST_TOKEN_SUB_ID_ZERO =
-  '0x0000000000000000000000000000000000000000000000000000000000000000'
+const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
 
 const ERC20_TOKEN_DATA = {
   tokenType: 0,
   tokenAddress: TEST_TOKEN_ADDRESS,
-  tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
+  tokenSubID: new Uint8Array(32),
 }
 
 /**
@@ -49,11 +47,11 @@ const mockTokenDataGetter: TokenDataGetter = {
    */
   async getTokenDataFromHash (_txidVersion, _chain, tokenHash) {
     const cleanHash = hexlify(tokenHash)
-    const address = '0x' + cleanHash.slice(24) // last 20 bytes
+    const addressHex = cleanHash.slice(24) // last 20 bytes
     return {
       tokenType: 0,
-      tokenAddress: address,
-      tokenSubID: '0x0000000000000000000000000000000000000000000000000000000000000000',
+      tokenAddress: hexToUint8Array(addressHex),
+      tokenSubID: new Uint8Array(32),
     }
   }
 }
