@@ -5,8 +5,19 @@ import { Mnemonic } from '../src/mnemonic'
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
+const MNEMONIC_ABANDON = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+const MNEMONIC_MAMMAL = 'mammal step public march absorb critic visa rent miss color erase exhaust south lift ordinary ceiling stay physical'
+const MNEMONIC_CULTURE = 'culture flower sunny seat maximum begin design magnet side permit coin dial alter insect whisper series desk power cream afford regular strike poem ostrich'
+
 const TEST_SEED = Mnemonic.toSeed(TEST_MNEMONIC)
 const TEST_MASTER_KEY = getMasterKeyFromSeed(TEST_SEED)
+const SEED_ABANDON = '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4'
+const SEED_MAMMAL = 'd8c228addf9a9cfe5b7934223737815e2f709b3ac12b0c1b2aaec921e5d3a2e8aeea1df817af8159f981798dacd5a930a1fcd8570ba4845078c1b1d09fa060cb'
+const SEED_CULTURE = '243c1266228fc9ff370d567ba4f805dfacc516375aecf4657cf870a4b551020d92d9b45a8181154f531c1358f742f42078a1620fca6251b1c4ec5fa6e1cf5c3a'
+const SEED_CULTURE_PASSWORD = '87ec3e2ae9294cb5500698e6e6ee8357aa56222badae0e6b4150492c95ede7ddfca27c952afafb388453def93fac72f5d7e099debd79e85c2088f9b3e7a65df6'
+
+const MASTER_KEY_ABANDON = { chainCode: '30d550bc2f61a7c206a1eba3704502da77f366fe69721265b3b7e2c7f05eeabc', chainKey: '1fafc64161d1807e294cc9fded180ca2009aaaedf4cbd7359d4aaa3bb462f411' }
+const MASTER_KEY_MAMMAL = { chainCode: 'b37268d31994f4bbe422feffb3e1dcb35b61b76c0c1ebea2ded5fb0e37aa0809', chainKey: 'c544e07e1007d25b6a3a7ddba8f1e20c2c23c9baec8e9a6200dd6c3b2f8df6a5' }
 
 test('bip39 - Mnemonic.generate', (t) => {
   const mnemonic128 = Mnemonic.generate(128)
@@ -144,18 +155,6 @@ test('bip32 - full derivation path', (t) => {
   t.ok(currentKey.chainKey instanceof Uint8Array, 'should derive key through full path')
   t.is(currentKey.chainKey.length, 32, 'derived key should be 32 bytes')
 })
-
-const MNEMONIC_ABANDON = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-const MNEMONIC_MAMMAL = 'mammal step public march absorb critic visa rent miss color erase exhaust south lift ordinary ceiling stay physical'
-const MNEMONIC_CULTURE = 'culture flower sunny seat maximum begin design magnet side permit coin dial alter insect whisper series desk power cream afford regular strike poem ostrich'
-
-const SEED_ABANDON = '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4'
-const SEED_MAMMAL = 'd8c228addf9a9cfe5b7934223737815e2f709b3ac12b0c1b2aaec921e5d3a2e8aeea1df817af8159f981798dacd5a930a1fcd8570ba4845078c1b1d09fa060cb'
-const SEED_CULTURE = '243c1266228fc9ff370d567ba4f805dfacc516375aecf4657cf870a4b551020d92d9b45a8181154f531c1358f742f42078a1620fca6251b1c4ec5fa6e1cf5c3a'
-const SEED_CULTURE_PASSWORD = '87ec3e2ae9294cb5500698e6e6ee8357aa56222badae0e6b4150492c95ede7ddfca27c952afafb388453def93fac72f5d7e099debd79e85c2088f9b3e7a65df6'
-
-const MASTER_KEY_ABANDON = { chainCode: '30d550bc2f61a7c206a1eba3704502da77f366fe69721265b3b7e2c7f05eeabc', chainKey: '1fafc64161d1807e294cc9fded180ca2009aaaedf4cbd7359d4aaa3bb462f411' }
-const MASTER_KEY_MAMMAL = { chainCode: 'b37268d31994f4bbe422feffb3e1dcb35b61b76c0c1ebea2ded5fb0e37aa0809', chainKey: 'c544e07e1007d25b6a3a7ddba8f1e20c2c23c9baec8e9a6200dd6c3b2f8df6a5' }
 
 test('bip39 - Mnemonic.toSeed known vectors', (t) => {
   t.is(uint8ArrayToHex(Mnemonic.toSeed(MNEMONIC_ABANDON), false), SEED_ABANDON, 'abandon mnemonic seed')
