@@ -1,6 +1,6 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { getPublicSpendingKey, getPublicViewingKey } from '../keys'
+import { assertCryptoInitialized, getPublicSpendingKey, getPublicViewingKey } from '../keys'
 import { Mnemonic } from '../mnemonic'
 
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from './bip32'
@@ -97,8 +97,10 @@ class WalletNode {
   /**
    * Gets the spending key pair for this wallet node.
    * @returns SpendingKeyPair object containing privateKey (Uint8Array) and pubkey (tuple of two Uint8Arrays)
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
    */
   getSpendingKeyPair (): SpendingKeyPair {
+    assertCryptoInitialized()
     const privateKey = this.chainKey
     const pubkey = getPublicSpendingKey(privateKey)
     return {
@@ -113,11 +115,13 @@ class WalletNode {
    * @param spendingPublicKey - A tuple containing two Uint8Arrays representing the spending public key.
    * @param nullifyingKey - A Uint8Array representing the nullifying key.
    * @returns A Uint8Array representing the computed master public key.
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
    */
   static getMasterPublicKey (
     spendingPublicKey: [Uint8Array, Uint8Array],
     nullifyingKey: Uint8Array
   ): Uint8Array {
+    assertCryptoInitialized()
     return poseidon([...spendingPublicKey, nullifyingKey]) as Uint8Array
   }
 
@@ -139,8 +143,10 @@ class WalletNode {
    * This method calculates the nullifying key using the private key obtained
    * from the viewing key pair and applies the Poseidon hash function.
    * @returns The calculated nullifying key as a Uint8Array.
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
    */
   getNullifyingKey (): Uint8Array {
+    assertCryptoInitialized()
     const { privateKey } = this.getViewingKeyPair()
     return poseidon([privateKey])
   }

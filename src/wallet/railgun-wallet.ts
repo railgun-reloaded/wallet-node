@@ -102,14 +102,24 @@ export class RailgunWallet {
   }
 
   /**
+   * Asserts that the keystore is initialized and returns it.
+   * @returns The initialized keystore.
+   * @throws {Error} If the keystore is not initialized.
+   */
+  private assertKeystoreInitialized (): RailgunKeystore {
+    if (!this.keystore) {
+      throw new Error('Keystore not initialized')
+    }
+    return this.keystore
+  }
+
+  /**
    * Retrieves the spending private key from the keystore.
    * @returns The spending private key as a Uint8Array.
    * @throws {Error} If the keystore is not initialized.
    */
   getSpendingPrivateKey (): Uint8Array<ArrayBufferLike> {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
+    this.assertKeystoreInitialized()
     return this.nodes.spending.getSpendingKeyPair().privateKey
   }
 
@@ -119,10 +129,7 @@ export class RailgunWallet {
    * @throws {Error} If the keystore is not initialized.
    */
   getSpendingPublicKey (): SpendingPublicKey {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
-    return this.keystore.spendingKeyPair.pubkey
+    return this.assertKeystoreInitialized().spendingKeyPair.pubkey
   }
 
   /**
@@ -131,10 +138,7 @@ export class RailgunWallet {
    * @throws {Error} If the keystore is not initialized.
    */
   getMasterPublicKey (): Uint8Array<ArrayBufferLike> {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
-    return this.keystore.masterPublicKey
+    return this.assertKeystoreInitialized().masterPublicKey
   }
 
   /**
@@ -143,10 +147,7 @@ export class RailgunWallet {
    * @throws {Error} If the keystore is not initialized.
    */
   getNullifyingKey (): Uint8Array {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
-    return this.keystore.nullifyingKey
+    return this.assertKeystoreInitialized().nullifyingKey
   }
 
   /**
@@ -155,10 +156,7 @@ export class RailgunWallet {
    * @throws {Error} If the keystore is not initialized.
    */
   getViewingPublicKey (): Uint8Array<ArrayBufferLike> {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
-    return this.keystore.viewingKeyPair.pubkey
+    return this.assertKeystoreInitialized().viewingKeyPair.pubkey
   }
 
   /**
@@ -167,9 +165,6 @@ export class RailgunWallet {
    * @throws {Error} If the keystore is not initialized.
    */
   getViewingPrivateKey (): Uint8Array<ArrayBufferLike> {
-    if (!this.keystore) {
-      throw new Error('Keystore not initialized')
-    }
-    return this.keystore.viewingKeyPair.privateKey
+    return this.assertKeystoreInitialized().viewingKeyPair.privateKey
   }
 }

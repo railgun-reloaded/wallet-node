@@ -10,6 +10,18 @@ import {
   xorBytesInPlace,
 } from './encoding'
 
+let cryptoInitialized = false
+
+/**
+ * Asserts that cryptography libraries have been initialized.
+ * @throws {Error} If initializeCryptographyLibs() has not been called.
+ */
+const assertCryptoInitialized = () => {
+  if (!cryptoInitialized) {
+    throw new Error('Cryptography libraries not initialized. Call initializeCryptographyLibs() first.')
+  }
+}
+
 const CURVE_L = BigInt(
   '7237005577332262213973186563042994240857116359379907606001950938285454250989'
 )
@@ -32,7 +44,8 @@ ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
 
 /**
  * Initializes the cryptography libraries required for the application.
- * This function sets up Circomlib and EDDSA cryptographic primitives.
+ * This function sets up Circomlib and EDDSA cryptographic primitives and sets the
+ * cryptoInitialized flag, enabling all functions guarded by assertCryptoInitialized().
  * @throws {Error} Throws an error if EDDSA fails to initialize.
  * @returns A promise that resolves when the cryptography libraries are successfully initialized.
  */
@@ -41,17 +54,19 @@ const initializeCryptographyLibs = async () => {
   await initCircomlib('wasm')
   await initializeEddsa(poseidonBuild.pure)
   if (typeof eddsa === 'undefined') { throw new Error('EDDSA failed to initialize.') }
+  cryptoInitialized = true
 }
 
 /**
  * Derives the public spending key from a given private key using the EdDSA algorithm.
  * @param privateKey - A 32-byte Uint8Array representing the private key.
  * @returns A tuple containing two Uint8Arrays representing the public key coordinates.
+ * @throws {Error} If initializeCryptographyLibs() has not been called.
  * @throws {Error} If the provided private key does not have a length of 32 bytes.
  */
 const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] => {
-  // convert this from
-  if (privateKey.length !== 32) throw Error('Invalid private key length')
+  assertCryptoInitialized()
+  if (privateKey.length !== 32) throw new Error('Expected 32 bytes for private key')
   return eddsa.privateKeyToPublicKey(privateKey)
 }
 
@@ -80,7 +95,7 @@ const adjustBytes25519 = (bytes: Uint8Array, endian: 'be' | 'le'): Uint8Array =>
   const adjustedBytes = new Uint8Array(bytes)
 
   if (typeof adjustedBytes === 'undefined' || adjustedBytes.byteLength !== 32) {
-    throw new Error('Invalid input: bytes must be a Uint8Array of length 32')
+    throw new Error('Expected 32 bytes for input')
   }
 
   if (endian === 'be') {
@@ -124,7 +139,7 @@ const getPrivateScalarFromPrivateKey = async (
   privateKey: Uint8Array
 ): Promise<Uint8Array> => {
   // Private key should be 32 bytes
-  if (privateKey.length !== 32) throw new Error('Expected 32 bytes')
+  if (privateKey.length !== 32) throw new Error('Expected 32 bytes for private key')
 
   // SHA512 hash private key
   const hash = sha512(privateKey)
@@ -149,12 +164,12 @@ const getPrivateScalarFromPrivateKey = async (
  * 3. Hashes the shared key preimage using SHA-256 to produce the final symmetric key.
  * @param privateKeyPairA - The private key pair of party A as a Uint8Array.
  * @param blindedPublicKeyPairB - The blinded public key pair of party B as a Uint8Array.
- * @returns A Promise that resolves to the generated symmetric key as a Uint8Array, or `undefined` if an error occurs.
+ * @returns A Promise that resolves to the generated symmetric key as a Uint8Array, or `null` if an error occurs.
  */
 const getSharedSymmetricKey = async (
   privateKeyPairA: Uint8Array,
   blindedPublicKeyPairB: Uint8Array
-): Promise<Uint8Array | undefined> => {
+): Promise<Uint8Array | null> => {
   try {
     // Retrieve private scalar from private key
     const scalar: Uint8Array = await getPrivateScalarFromPrivateKey(
@@ -171,7 +186,7 @@ const getSharedSymmetricKey = async (
     const hashed: Uint8Array = sha256(keyPreimage)
     return hashed
   } catch {
-    return undefined
+    return null
   }
 }
 
@@ -211,8 +226,10 @@ const scalarMultiplyJavascript = (
  *
  * This function creates a random 32-byte value and hashes it using the Poseidon hash function to produce a scalar.
  * @returns A random scalar value (as Uint8Array) derived from the Poseidon hash.
+ * @throws {Error} If initializeCryptographyLibs() has not been called.
  */
 const getRandomScalar = (): Uint8Array => {
+  assertCryptoInitialized()
   return poseidon([randomBytes(32)]) as Uint8Array
 }
 
@@ -295,13 +312,13 @@ const getNoteBlindingKeys = (
  * @param blindedNoteKey - The blinded note key as a Uint8Array.
  * @param sharedRandom - A shared random value used in the blinding operation as a Uint8Array.
  * @param senderRandom - A sender-specific random value used in the blinding operation as a Uint8Array.
- * @returns The unblinded note key as a Uint8Array, or `undefined` if the operation fails.
+ * @returns The unblinded note key as a Uint8Array, or `null` if the operation fails.
  */
 const unblindNoteKey = (
   blindedNoteKey: Uint8Array,
   sharedRandom: Uint8Array,
   senderRandom: Uint8Array
-): Uint8Array | undefined => {
+): Uint8Array | null => {
   try {
     const blindingScalar = getBlindingScalar(sharedRandom, senderRandom)
 
@@ -316,10 +333,11 @@ const unblindNoteKey = (
 
     return unblinded.toRawBytes()
   } catch {
-    return undefined
+    return null
   }
 }
 export {
+  assertCryptoInitialized,
   getPublicSpendingKey,
   getPublicViewingKey,
   adjustBytes25519,

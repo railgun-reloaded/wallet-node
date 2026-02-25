@@ -27,11 +27,11 @@ class Memo {
   /**
    * Decodes a UTF-8 encoded Uint8Array back to a memo text string.
    * @param encoded - The UTF-8 encoded bytes
-   * @returns The decoded string, or undefined if the input is empty
+   * @returns The decoded string, or null if the input is empty
    */
-  static decodeMemoText (encoded: Uint8Array): string | undefined {
+  static decodeMemoText (encoded: Uint8Array): string | null {
     if (encoded.length === 0) {
-      return undefined
+      return null
     }
     return new TextDecoder().decode(encoded)
   }
@@ -96,14 +96,14 @@ class Memo {
    * Decrypts V2 annotation data from a transact note.
    * @param annotationData - The encrypted annotation data bytes
    * @param viewingPrivateKey - 32-byte viewing private key used as AES-CTR decryption key
-   * @returns NoteAnnotationData or undefined if decryption fails
+   * @returns NoteAnnotationData or null if decryption fails
    */
   static decryptAnnotationData (
     annotationData: Uint8Array,
     viewingPrivateKey: Uint8Array
-  ): NoteAnnotationData | undefined {
+  ): NoteAnnotationData | null {
     if (!annotationData || annotationData.length === 0) {
-      return undefined
+      return null
     }
 
     try {
@@ -126,17 +126,17 @@ class Memo {
 
       const block0 = decrypted[0]
       if (!block0 || block0.length < 16) {
-        return undefined
+        return null
       }
 
       const outputType = block0[0]!
       if (!Object.values(OutputType).includes(outputType)) {
-        return undefined
+        return null
       }
 
       const senderRandom = uint8ArrayToHex(block0.slice(1, 16), false)
       if (senderRandom.length !== 30) {
-        return undefined
+        return null
       }
 
       let walletSource: string | undefined
@@ -153,7 +153,7 @@ class Memo {
 
       return { outputType, senderRandom, walletSource }
     } catch {
-      return undefined
+      return null
     }
   }
 

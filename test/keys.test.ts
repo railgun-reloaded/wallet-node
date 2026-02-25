@@ -194,7 +194,7 @@ test('keys - unblindNoteKey', async (t) => {
   // Unblind it
   const unblinded = unblindNoteKey(blindedReceiverViewingKey, sharedRandom, senderRandom)
 
-  t.ok(unblinded instanceof Uint8Array || unblinded === undefined, 'should return Uint8Array or undefined')
+  t.ok(unblinded instanceof Uint8Array || unblinded === null, 'should return Uint8Array or null')
   if (unblinded) {
     t.is(unblinded.length, 32, 'unblinded key should be 32 bytes')
   }
@@ -210,7 +210,7 @@ test('keys - getSharedSymmetricKey', async (t) => {
 
   const sharedKey = await getSharedSymmetricKey(privateKeyA, publicKeyB)
 
-  t.ok(sharedKey instanceof Uint8Array || sharedKey === undefined, 'should return Uint8Array or undefined')
+  t.ok(sharedKey instanceof Uint8Array || sharedKey === null, 'should return Uint8Array or null')
   if (sharedKey) {
     t.is(sharedKey.length, 32, 'shared key should be 32 bytes')
   }

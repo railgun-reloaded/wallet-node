@@ -8,7 +8,7 @@ test('memo - encode and decode undefined memo text', (t) => {
   const encoded = Memo.encodeMemoText(undefined)
   t.is(encoded.length, 0, 'Undefined should encode to empty array')
   const decoded = Memo.decodeMemoText(new Uint8Array(0))
-  t.is(decoded, undefined, 'Empty array should decode to undefined')
+  t.is(decoded, null, 'Empty array should decode to null')
 })
 
 test('memo - encode and decode text', (t) => {
@@ -36,7 +36,7 @@ test('memo - encrypt and decrypt V2 annotation data', (t) => {
   t.is(decrypted!.walletSource, walletSource, 'WalletSource should match')
 })
 
-test('memo - decrypt with wrong key returns undefined', (t) => {
+test('memo - decrypt with wrong key returns null', (t) => {
   const correctKey = new Uint8Array(32)
   for (let i = 0; i < 32; i++) correctKey[i] = i + 1
 
@@ -51,13 +51,13 @@ test('memo - decrypt with wrong key returns undefined', (t) => {
   )
 
   const decrypted = Memo.decryptAnnotationData(encrypted, wrongKey)
-  t.is(decrypted, undefined, 'Should return undefined for wrong key')
+  t.is(decrypted, null, 'Should return null for wrong key')
 })
 
-test('memo - decrypt empty annotation returns undefined', (t) => {
+test('memo - decrypt empty annotation returns null', (t) => {
   const key = new Uint8Array(32)
   const result = Memo.decryptAnnotationData(new Uint8Array(0), key)
-  t.is(result, undefined, 'Empty annotation should return undefined')
+  t.is(result, null, 'Empty annotation should return null')
 })
 
 test('memo - throws on invalid senderRandom length', (t) => {
@@ -110,7 +110,7 @@ test('memo - annotation data roundtrip for all output types', async (t) => {
       viewingPrivateKey
     )
     const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
-    t.ok(decrypted !== undefined, `should decrypt outputType ${outputType}`)
+    t.ok(decrypted !== null, `should decrypt outputType ${outputType}`)
     t.is(decrypted!.outputType, outputType, `should recover outputType ${outputType}`)
   }
 })
