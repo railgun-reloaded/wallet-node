@@ -90,6 +90,19 @@ abstract class Note {
   }
 
   /**
+   * Computes the nullifier for a note at a given leaf index.
+   * The nullifier uniquely identifies a note when it is spent.
+   * @param nullifyingKey - The wallet's nullifying key as a Uint8Array
+   * @param leafIndex - The note's position in the merkle tree
+   * @returns The nullifier as a Uint8Array
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
+   */
+  static computeNullifier (nullifyingKey: Uint8Array, leafIndex: bigint): Uint8Array {
+    assertCryptoInitialized()
+    return poseidon([nullifyingKey, bigintToUint8Array(leafIndex, 32)])
+  }
+
+  /**
    * Serializes the note to a Uint8Array.
    * Must be implemented by subclasses.
    * @returns The serialized note
