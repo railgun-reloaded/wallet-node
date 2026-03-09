@@ -1,6 +1,6 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { bigintToUint8Array, hexlify } from '../encoding'
+import { bigintToUint8Array, hexlify, padUint8Array } from '../encoding'
 import { assertCryptoInitialized } from '../keys'
 
 import type { TokenData } from './definitions'
@@ -85,8 +85,34 @@ abstract class Note {
    */
   static getHash (npk: Uint8Array, tokenHash: Uint8Array, value: bigint): Uint8Array {
     assertCryptoInitialized()
-    const valueBytes = bigintToUint8Array(value, 16) // 128-bit value
-    return poseidon([npk, tokenHash, valueBytes])
+    const valueBytes = bigintToUint8Array(value, 32)
+    return poseidon([padUint8Array(npk, 32), padUint8Array(tokenHash, 32), valueBytes])
+  }
+
+  /**
+   * Computes the note public key (NPK) from a master public key and random value.
+   * NPK = poseidon(masterPublicKey, random)
+   * @param masterPublicKey - The receiver's master public key as a Uint8Array
+   * @param random - The note random value as a Uint8Array (16 bytes)
+   * @returns The note public key as a Uint8Array
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
+   */
+  static computeNotePublicKey (masterPublicKey: Uint8Array, random: Uint8Array): Uint8Array {
+    assertCryptoInitialized()
+    return poseidon([padUint8Array(masterPublicKey, 32), padUint8Array(random, 32)])
+  }
+
+  /**
+   * Computes the nullifier for a note at a given leaf index.
+   * The nullifier uniquely identifies a note when it is spent.
+   * @param nullifyingKey - The wallet's nullifying key as a Uint8Array
+   * @param leafIndex - The note's position in the merkle tree
+   * @returns The nullifier as a Uint8Array
+   * @throws {Error} If initializeCryptographyLibs() has not been called.
+   */
+  static computeNullifier (nullifyingKey: Uint8Array, leafIndex: bigint): Uint8Array {
+    assertCryptoInitialized()
+    return poseidon([nullifyingKey, bigintToUint8Array(leafIndex, 32)])
   }
 
   /**

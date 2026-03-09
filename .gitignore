@@ -8,3 +8,6 @@ node_modules
 setup
 immutable-tags.json
 protected-main.json
+
+# dev-container
+.devcontainer/
