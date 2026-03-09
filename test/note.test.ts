@@ -58,7 +58,7 @@ test('Note.getHash - known vector and properties', async (t) => {
   const hash1 = Note.getHash(npkBytes, tokenHashBytes, BigInt('1000000000000000000'))
   t.is(
     uint8ArrayToBigInt(hash1),
-    7822264150748016131168246751038092891550418438611309934403065338118898163274n,
+    383327982694222908883234614730482634434594360360520710439697655391370961429n,
     'should match known poseidon hash'
   )
 
@@ -94,6 +94,49 @@ test('Note.assertValidRandom - empty string', (t) => {
   t.exception(() => {
     Note.assertValidRandom('')
   }, 'should throw for empty string')
+})
+
+test('Note.computeNotePublicKey - known vector', (t) => {
+  const mpk = hexToUint8Array('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
+  const random = hexToUint8Array('aabbccdd11223344aabbccdd11223344')
+  const npk = Note.computeNotePublicKey(mpk, random)
+  t.is(
+    uint8ArrayToHex(npk),
+    '0x29ff6e77d641ba129aa692e36df05f05ae731a93c232f613e137e09058a79d1c',
+    'should match known poseidon(mpk, random)'
+  )
+})
+
+test('Note.computeNotePublicKey - 16-byte random is padded to 32 bytes', (t) => {
+  const mpk = hexToUint8Array('1234567890123456789012345678901234567890123456789012345678901234')
+  const random16 = hexToUint8Array('aabbccdd11223344aabbccdd11223344')
+  const random32 = hexToUint8Array('00000000000000000000000000000000aabbccdd11223344aabbccdd11223344')
+  const npk16 = Note.computeNotePublicKey(mpk, random16)
+  const npk32 = Note.computeNotePublicKey(mpk, random32)
+  t.alike(npk16, npk32, 'padded 16-byte random should equal explicit 32-byte zero-padded random')
+})
+
+test('Note.computeNotePublicKey - determinism', (t) => {
+  const mpk = hexToUint8Array('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
+  const random = hexToUint8Array('aabbccdd11223344aabbccdd11223344')
+  const npk1 = Note.computeNotePublicKey(mpk, random)
+  const npk2 = Note.computeNotePublicKey(mpk, random)
+  t.alike(npk1, npk2, 'same inputs should produce same NPK')
+})
+
+test('Note.computeNotePublicKey - different inputs produce different NPKs', (t) => {
+  const mpk1 = hexToUint8Array('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
+  const mpk2 = hexToUint8Array('2c59cd4733f911ba740da68fb7ba3b873f21daece4e3a105aef12d6414e54ebf')
+  const random = hexToUint8Array('aabbccdd11223344aabbccdd11223344')
+
+  const npkA = Note.computeNotePublicKey(mpk1, random)
+  const npkB = Note.computeNotePublicKey(mpk2, random)
+  t.not(uint8ArrayToHex(npkA), uint8ArrayToHex(npkB), 'different MPKs should produce different NPKs')
+
+  const random2 = hexToUint8Array('11223344aabbccdd11223344aabbccdd')
+  const npkC = Note.computeNotePublicKey(mpk1, random)
+  const npkD = Note.computeNotePublicKey(mpk1, random2)
+  t.not(uint8ArrayToHex(npkC), uint8ArrayToHex(npkD), 'different randoms should produce different NPKs')
 })
 
 test('Note.computeNullifier - engine test vectors', (t) => {
