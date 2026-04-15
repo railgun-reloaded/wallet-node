@@ -350,5 +350,6 @@ export {
   seedToScalar,
   getBlindingScalar,
   getNoteBlindingKeys,
-  unblindNoteKey
+  unblindNoteKey,
+  poseidon
 }
