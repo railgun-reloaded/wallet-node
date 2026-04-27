@@ -1,6 +1,6 @@
+import { bytesToBigInt, bytesToHex } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
 import type { Chain, Ciphertext, TokenData, TokenDataGetter } from './definitions'
@@ -60,14 +60,14 @@ async function decryptCommitment (
       return null
     }
 
-    const encodedMPK = uint8ArrayToHex(mpkBytes)
-    const tokenHash = uint8ArrayToHex(tokenHashBytes)
+    const encodedMPK = bytesToHex(mpkBytes, { prefix: true })
+    const tokenHash = bytesToHex(tokenHashBytes, { prefix: true })
     const tokenData = await tokenDataGetter.getTokenDataFromHash(txidVersion, chain, tokenHash)
 
     // decryptedCiphertext[2] contains: random (16 bytes) + value (16 bytes)
-    const random = uint8ArrayToHex(randomValueBytes.slice(0, 16))
+    const random = bytesToHex(randomValueBytes.slice(0, 16), { prefix: true })
 
-    const value = uint8ArrayToBigInt(randomValueBytes.slice(16, 32))
+    const value = bytesToBigInt(randomValueBytes.slice(16, 32))
 
     return { random, encodedMPK, value, tokenData }
   } catch (error) {

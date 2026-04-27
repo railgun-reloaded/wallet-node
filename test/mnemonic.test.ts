@@ -1,6 +1,6 @@
+import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { test } from 'brittle'
 
-import { hexToUint8Array, uint8ArrayToHex } from '../src/encoding'
 import { Mnemonic } from '../src/mnemonic'
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32'
 
@@ -157,10 +157,10 @@ test('bip32 - full derivation path', (t) => {
 })
 
 test('bip39 - Mnemonic.toSeed known vectors', (t) => {
-  t.is(uint8ArrayToHex(Mnemonic.toSeed(MNEMONIC_ABANDON), false), SEED_ABANDON, 'abandon mnemonic seed')
-  t.is(uint8ArrayToHex(Mnemonic.toSeed(MNEMONIC_MAMMAL), false), SEED_MAMMAL, 'mammal mnemonic seed')
-  t.is(uint8ArrayToHex(Mnemonic.toSeed(MNEMONIC_CULTURE), false), SEED_CULTURE, 'culture mnemonic seed')
-  t.is(uint8ArrayToHex(Mnemonic.toSeed(MNEMONIC_CULTURE, 'test'), false), SEED_CULTURE_PASSWORD, 'culture mnemonic seed with password')
+  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_ABANDON)), SEED_ABANDON, 'abandon mnemonic seed')
+  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_MAMMAL)), SEED_MAMMAL, 'mammal mnemonic seed')
+  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE)), SEED_CULTURE, 'culture mnemonic seed')
+  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE, 'test')), SEED_CULTURE_PASSWORD, 'culture mnemonic seed with password')
 })
 
 test('bip39 - Mnemonic.toEntropy known vectors', (t) => {
@@ -171,8 +171,8 @@ test('bip39 - Mnemonic.toEntropy known vectors', (t) => {
   ]
 
   for (const v of vectors) {
-    t.is(uint8ArrayToHex(Mnemonic.toEntropy(v.mnemonic), false), v.entropy, `entropy for: ${v.mnemonic.slice(0, 10)}...`)
-    t.is(Mnemonic.fromEntropy(hexToUint8Array(v.entropy)), v.mnemonic, `fromEntropy roundtrip for: ${v.mnemonic.slice(0, 10)}...`)
+    t.is(bytesToHex(Mnemonic.toEntropy(v.mnemonic)), v.entropy, `entropy for: ${v.mnemonic.slice(0, 10)}...`)
+    t.is(Mnemonic.fromEntropy(hexToBytes(v.entropy)), v.mnemonic, `fromEntropy roundtrip for: ${v.mnemonic.slice(0, 10)}...`)
   }
 })
 
@@ -191,9 +191,9 @@ test('bip32 - getMasterKeyFromSeed known vectors', (t) => {
   ]
 
   for (const v of vectors) {
-    const mk = getMasterKeyFromSeed(hexToUint8Array(v.seed))
-    t.is(uint8ArrayToHex(mk.chainCode, false), v.chainCode, 'chainCode should match')
-    t.is(uint8ArrayToHex(mk.chainKey, false), v.chainKey, 'chainKey should match')
+    const mk = getMasterKeyFromSeed(hexToBytes(v.seed))
+    t.is(bytesToHex(mk.chainCode), v.chainCode, 'chainCode should match')
+    t.is(bytesToHex(mk.chainKey), v.chainKey, 'chainKey should match')
   }
 })
 
@@ -205,9 +205,9 @@ test('bip32 - childKeyDerivationHardened known vectors', (t) => {
   ]
 
   for (const v of vectors) {
-    const parent = { chainCode: hexToUint8Array(v.parent.chainCode), chainKey: hexToUint8Array(v.parent.chainKey) }
+    const parent = { chainCode: hexToBytes(v.parent.chainCode), chainKey: hexToBytes(v.parent.chainKey) }
     const child = childKeyDerivationHardened(parent, v.index)
-    t.is(uint8ArrayToHex(child.chainCode, false), v.childChainCode, `childChainCode at index ${v.index}`)
-    t.is(uint8ArrayToHex(child.chainKey, false), v.childChainKey, `childChainKey at index ${v.index}`)
+    t.is(bytesToHex(child.chainCode), v.childChainCode, `childChainCode at index ${v.index}`)
+    t.is(bytesToHex(child.chainKey), v.childChainKey, `childChainKey at index ${v.index}`)
   }
 })

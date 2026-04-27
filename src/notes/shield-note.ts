@@ -1,7 +1,7 @@
 import { decode, encode } from '@msgpack/msgpack'
+import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { hexToUint8Array, uint8ArrayToHex } from '../encoding'
 import { getSharedSymmetricKey } from '../keys'
 
 import type { GeneratedCommitment, ShieldCommitment } from './definitions'
@@ -64,7 +64,7 @@ class ShieldNote extends Note {
       tokenHash: this.tokenHash,
       notePublicKey: this.notePublicKey,
       value: this.value.toString(),
-      masterPublicKey: uint8ArrayToHex(this.masterPublicKey),
+      masterPublicKey: bytesToHex(this.masterPublicKey, { prefix: true }),
       token: {
         tokenAddress: this.tokenData.tokenAddress,
         tokenType: this.tokenData.tokenType,
@@ -88,7 +88,7 @@ class ShieldNote extends Note {
       value: BigInt(value),
       tokenData: deserializeTokenData(token),
       random,
-      masterPublicKey: hexToUint8Array(masterPublicKey),
+      masterPublicKey: hexToBytes(masterPublicKey),
       shieldFee: shieldFee ? BigInt(shieldFee) : undefined,
       blockNumber,
     })
@@ -122,7 +122,7 @@ class ShieldNote extends Note {
       const decrypted = AES.decryptGCM({ iv, tag, data: [encryptedData] }, viewingPrivateKey)
       const randomBytes = decrypted[0]!
 
-      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
+      return ShieldNote.buildFromPreimage(commitment, bytesToHex(randomBytes, { prefix: true }), masterPublicKey)
     } catch {
       return null
     }
@@ -169,7 +169,7 @@ class ShieldNote extends Note {
       // The decrypted block is the random value (16 bytes)
       const randomBytes = decrypted[0]!
 
-      return ShieldNote.buildFromPreimage(commitment, uint8ArrayToHex(randomBytes), masterPublicKey)
+      return ShieldNote.buildFromPreimage(commitment, bytesToHex(randomBytes, { prefix: true }), masterPublicKey)
     } catch {
       // Decryption failed — commitment not addressed to this wallet
       return null
@@ -212,7 +212,7 @@ class ShieldNote extends Note {
     )
 
     return new ShieldNote({
-      notePublicKey: uint8ArrayToHex(npk),
+      notePublicKey: bytesToHex(npk, { prefix: true }),
       value,
       tokenData,
       random,

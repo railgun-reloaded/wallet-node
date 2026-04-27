@@ -1,11 +1,11 @@
+import { hexToBytes } from '@railgun-reloaded/bytes'
 import { ActionType } from '@railgun-reloaded/scanner'
 import { hook, test } from 'brittle'
 
-import { hexToUint8Array } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import { UnshieldNote } from '../src/notes/unshield-note'
 
-const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
@@ -87,7 +87,7 @@ test('unshield-note - serialize and deserialize', async (t) => {
 test('unshield-note - fromUnshield ERC20', async (t) => {
   const unshieldData = {
     actionType: ActionType.Unshield,
-    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
       tokenAddress: TEST_TOKEN_ADDRESS,
@@ -127,12 +127,12 @@ test('unshield-note - fromUnshield ERC20', async (t) => {
 test('unshield-note - fromUnshield ERC721', async (t) => {
   const unshieldData = {
     actionType: ActionType.Unshield,
-    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
       tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'ERC721',
-      tokenSubID: hexToUint8Array(
+      tokenSubID: hexToBytes(
         '0x0000000000000000000000000000000000000000000000000000000000000001'
       ),
     },
@@ -153,12 +153,12 @@ test('unshield-note - fromUnshield ERC721', async (t) => {
 test('unshield-note - fromUnshield ERC1155', async (t) => {
   const unshieldData = {
     actionType: ActionType.Unshield,
-    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
       tokenAddress: TEST_TOKEN_ADDRESS,
       tokenType: 'ERC1155',
-      tokenSubID: hexToUint8Array(
+      tokenSubID: hexToBytes(
         '0x0000000000000000000000000000000000000000000000000000000000000005'
       ),
     },
@@ -179,7 +179,7 @@ test('unshield-note - fromUnshield ERC1155', async (t) => {
 test('unshield-note - fromUnshield invalid tokenType throws', async (t) => {
   const unshieldData = {
     actionType: ActionType.Unshield,
-    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
       tokenAddress: TEST_TOKEN_ADDRESS,
@@ -211,7 +211,7 @@ test('unshield-note - serialize and deserialize ERC721', async (t) => {
   const erc721TokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
   }
 
   const unshieldNote = new UnshieldNote({
@@ -235,7 +235,7 @@ test('unshield-note - serialize and deserialize ERC721', async (t) => {
 test('unshield-note - fromUnshield with zero amount and fee', async (t) => {
   const unshieldData = {
     actionType: ActionType.Unshield,
-    to: hexToUint8Array('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
+    to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
     token: {
       id: new Uint8Array(32),
       tokenAddress: TEST_TOKEN_ADDRESS,

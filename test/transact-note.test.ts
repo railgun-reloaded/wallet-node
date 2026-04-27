@@ -1,7 +1,7 @@
 import { randomBytes } from '@noble/hashes/utils'
+import { bytesToBigInt, hexToBytes, hexlify } from '@railgun-reloaded/bytes'
 import { hook, test } from 'brittle'
 
-import { hexToUint8Array, hexlify, uint8ArrayToBigInt } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import type { TokenDataGetter } from '../src/notes/definitions'
 import { ChainType, TXIDVersion } from '../src/notes/definitions'
@@ -11,7 +11,7 @@ import { TransactNote } from '../src/notes/transact-note'
 
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
 
-const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
 const TEST_RANDOM = '12345678901234567890123456789012'
@@ -40,7 +40,7 @@ const mockTokenDataGetter: TokenDataGetter = {
     const addressHex = cleanHash.slice(24) // last 20 bytes
     return {
       tokenType: 0,
-      tokenAddress: hexToUint8Array(addressHex),
+      tokenAddress: hexToBytes(addressHex),
       tokenSubID: new Uint8Array(32),
     }
   }
@@ -438,9 +438,9 @@ test('transact-note - fromCommitment hash matches Note.getHash', async (t) => {
     receiverAddressData
   )
 
-  const npkBytes = hexToUint8Array(TEST_NPK)
-  const tokenHashBytes = hexToUint8Array(computeTokenHash(ERC20_TOKEN_DATA))
-  const expectedHash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, TEST_VALUE))
+  const npkBytes = hexToBytes(TEST_NPK)
+  const tokenHashBytes = hexToBytes(computeTokenHash(ERC20_TOKEN_DATA))
+  const expectedHash = bytesToBigInt(Note.getHash(npkBytes, tokenHashBytes, TEST_VALUE))
 
   t.is(transactNote.hash, expectedHash, 'fromCommitment hash should match Note.getHash')
 })

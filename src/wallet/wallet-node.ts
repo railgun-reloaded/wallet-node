@@ -29,7 +29,7 @@ type WalletNodes = { spending: WalletNode; viewing: WalletNode }
  *
  * ### Dependencies:
  * - `poseidonFunc`: A cryptographic hash function used for key computations.
- * - `uint8ArrayToBigInt`: Utility for converting Uint8Array to bigint.
+ * - `bytesToBigInt`: Utility for converting Uint8Array to bigint.
  * - External functions for mnemonic seed generation, key derivation, and public key computation.
  *
  * ### Notes:

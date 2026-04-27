@@ -1,4 +1,4 @@
-import { hexToUint8Array, hexlify, uint8ArrayToBigInt } from '../encoding'
+import { bytesToBigInt, hexToBytes, hexlify } from '@railgun-reloaded/bytes'
 
 const MAX_LENGTH = 16
 const WALLET_SOURCE_CHARSET = ' 0123456789abcdefghijklmnopqrstuvwxyz'
@@ -44,7 +44,7 @@ class WalletInfo {
     }
 
     // Convert bigint to bytes (big-endian)
-    return hexToUint8Array(hexlify(outputNumber))
+    return hexToBytes(hexlify(outputNumber))
   }
 
   /**
@@ -58,7 +58,7 @@ class WalletInfo {
     }
 
     // Convert bytes to bigint (big-endian)
-    let inputNumber = uint8ArrayToBigInt(encoded)
+    let inputNumber = bytesToBigInt(encoded)
 
     if (inputNumber === 0n) {
       return ''

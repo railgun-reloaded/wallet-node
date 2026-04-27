@@ -1,8 +1,7 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { parse as parse0zkAddress, stringify as stringify0zkAddress } from '@railgun-reloaded/0zk-addresses'
+import { bytesToBigInt, bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
-
-import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
 
 import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
 import type { NoteParams } from './note'
@@ -149,10 +148,10 @@ class TransactNote extends Note {
 
     const tokenData = await tokenDataGetter.getTokenDataFromHash(txidVersion, chain, data.tokenHash)
 
-    const npkBytes = hexToUint8Array(data.npk)
-    const tokenHashBytes = hexToUint8Array(data.tokenHash)
+    const npkBytes = hexToBytes(data.npk)
+    const tokenHashBytes = hexToBytes(data.tokenHash)
     const value = BigInt(data.value)
-    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
+    const hash = bytesToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote({
       notePublicKey: data.npk,
@@ -191,9 +190,9 @@ class TransactNote extends Note {
     receiverAddressData: AddressData,
     senderAddressData?: AddressData
   ): TransactNote {
-    const npkBytes = hexToUint8Array(npk)
-    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
+    const npkBytes = hexToBytes(npk)
+    const tokenHashBytes = hexToBytes(computeTokenHash(tokenData))
+    const hash = bytesToBigInt(Note.getHash(npkBytes, tokenHashBytes, value))
 
     return new TransactNote({
       notePublicKey: npk,
@@ -215,12 +214,12 @@ class TransactNote extends Note {
    * @returns The serialized legacy transact note
    */
   serializeLegacy (viewingPrivateKey: Uint8Array): Uint8Array {
-    const randomBytes = hexToUint8Array(this.random)
+    const randomBytes = hexToBytes(this.random)
     const ciphertext = AES.encryptGCM([randomBytes], viewingPrivateKey)
 
     // Convert ciphertext to legacy format [ivTag, data]
-    const ivTag = uint8ArrayToHex(ciphertext.iv, false) + uint8ArrayToHex(ciphertext.tag, false)
-    const encryptedData = ciphertext.data[0] ? uint8ArrayToHex(ciphertext.data[0], false) : ''
+    const ivTag = bytesToHex(ciphertext.iv) + bytesToHex(ciphertext.tag)
+    const encryptedData = ciphertext.data[0] ? bytesToHex(ciphertext.data[0]) : ''
     const encryptedRandom: EncryptedData = [ivTag, encryptedData]
 
     return encode({
@@ -253,22 +252,22 @@ class TransactNote extends Note {
       const encryptedData = data.encryptedRandom as EncryptedData
       const [ivTag, encryptedRandomData] = encryptedData
 
-      const iv = hexToUint8Array('0x' + ivTag.slice(0, 32))
-      const tag = hexToUint8Array('0x' + ivTag.slice(32))
-      const encData = hexToUint8Array('0x' + encryptedRandomData)
+      const iv = hexToBytes('0x' + ivTag.slice(0, 32))
+      const tag = hexToBytes('0x' + ivTag.slice(32))
+      const encData = hexToBytes('0x' + encryptedRandomData)
 
       const ciphertext: Ciphertext = { iv, tag, data: [encData] }
       const decrypted = AES.decryptGCM(ciphertext, viewingPrivateKey)
-      const random = uint8ArrayToHex(decrypted[0] || new Uint8Array(16))
+      const random = bytesToHex(decrypted[0] || new Uint8Array(16), { prefix: true })
 
       // Legacy notes are always ERC20
       const tokenData = getTokenDataERC20(data.tokenHash)
 
       const receiverAddressData = parse0zkAddress(data.recipientAddress)
 
-      const npkBytes = hexToUint8Array(data.npk)
-      const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-      const hash = uint8ArrayToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
+      const npkBytes = hexToBytes(data.npk)
+      const tokenHashBytes = hexToBytes(computeTokenHash(tokenData))
+      const hash = bytesToBigInt(Note.getHash(npkBytes, tokenHashBytes, BigInt(data.value)))
 
       return new TransactNote({
         notePublicKey: data.npk,

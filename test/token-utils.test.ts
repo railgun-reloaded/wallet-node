@@ -1,9 +1,6 @@
+import { bytesToBigInt, hexToBytes } from '@railgun-reloaded/bytes'
 import { hook, test } from 'brittle'
 
-import {
-  hexToUint8Array,
-  uint8ArrayToBigInt,
-} from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import {
   assertValidNoteToken,
@@ -16,7 +13,7 @@ import {
   serializeTokenData,
 } from '../src/notes/token-utils'
 
-const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_VALUE = 1000000000000000000n // 1 ETH
 
 const ERC20_TOKEN_DATA = {
@@ -28,13 +25,13 @@ const ERC20_TOKEN_DATA = {
 const ERC721_TOKEN_DATA = {
   tokenType: 1,
   tokenAddress: TEST_TOKEN_ADDRESS,
-  tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+  tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
 }
 
 const ERC1155_TOKEN_DATA = {
   tokenType: 2,
   tokenAddress: TEST_TOKEN_ADDRESS,
-  tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000005'),
+  tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000005'),
 }
 
 /**
@@ -90,7 +87,7 @@ test('token-utils - computeTokenHashNFT different subIDs', (t) => {
   const hash1 = computeTokenHashNFT(ERC721_TOKEN_DATA)
   const hash2 = computeTokenHashNFT({
     ...ERC721_TOKEN_DATA,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000002'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000002'),
   })
 
   t.not(hash1, hash2, 'different subIDs should produce different hashes')
@@ -146,7 +143,7 @@ test('token-utils - assertValidNoteToken ERC20 valid', (t) => {
 test('token-utils - assertValidNoteToken rejects 32-byte address', (t) => {
   const tokenData = {
     tokenType: 0,
-    tokenAddress: hexToUint8Array('0x' + '12'.repeat(32)),
+    tokenAddress: hexToBytes('0x' + '12'.repeat(32)),
     tokenSubID: new Uint8Array(32),
   }
   t.exception(() => {
@@ -157,7 +154,7 @@ test('token-utils - assertValidNoteToken rejects 32-byte address', (t) => {
 test('token-utils - assertValidNoteToken ERC20 invalid address length', (t) => {
   const tokenData = {
     tokenType: 0,
-    tokenAddress: hexToUint8Array('0x1234'),
+    tokenAddress: hexToBytes('0x1234'),
     tokenSubID: new Uint8Array(32),
   }
   t.exception(() => {
@@ -182,7 +179,7 @@ test('token-utils - assertValidNoteToken ERC721 valid', (t) => {
   const tokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
   }
   t.execution(() => {
     assertValidNoteToken(tokenData, 1n)
@@ -204,7 +201,7 @@ test('token-utils - assertValidNoteToken ERC721 wrong value', (t) => {
   const tokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
   }
   t.exception(() => {
     assertValidNoteToken(tokenData, 2n)
@@ -214,8 +211,8 @@ test('token-utils - assertValidNoteToken ERC721 wrong value', (t) => {
 test('token-utils - assertValidNoteToken ERC721 invalid address length', (t) => {
   const tokenData = {
     tokenType: 1,
-    tokenAddress: hexToUint8Array('0x' + '12'.repeat(32)),
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    tokenAddress: hexToBytes('0x' + '12'.repeat(32)),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
   }
   t.exception(() => {
     assertValidNoteToken(tokenData, 1n)
@@ -226,7 +223,7 @@ test('token-utils - assertValidNoteToken ERC1155 valid', (t) => {
   const tokenData = {
     tokenType: 2,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000005'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000005'),
   }
   t.execution(() => {
     assertValidNoteToken(tokenData, 100n)
@@ -260,7 +257,7 @@ test('token-utils - computeTokenHash NFT properties', (t) => {
 
   // Hash should be less than SNARK_PRIME (result of mod operation)
   const SNARK_PRIME = 21888242871839275222246405745257275088548364400416034343698204186575808495617n
-  const hashBigInt = uint8ArrayToBigInt(hexToUint8Array(erc721Hash))
+  const hashBigInt = bytesToBigInt(hexToBytes(erc721Hash))
   t.ok(hashBigInt < SNARK_PRIME, 'NFT hash should be less than SNARK_PRIME')
 
   // computeTokenHashNFT directly should match computeTokenHash
@@ -338,7 +335,7 @@ test('token-utils - assertValidNoteToken ERC721 value zero', (t) => {
     assertValidNoteToken({
       tokenType: 1,
       tokenAddress: TEST_TOKEN_ADDRESS,
-      tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+      tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
     }, 0n)
   }, 'should throw for ERC721 with value 0')
 })
@@ -348,7 +345,7 @@ test('token-utils - assertValidNoteToken ERC1155 value zero passes', (t) => {
     assertValidNoteToken({
       tokenType: 2,
       tokenAddress: TEST_TOKEN_ADDRESS,
-      tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000005'),
+      tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000005'),
     }, 0n)
   }, 'should not throw for ERC1155 with value 0')
 })
@@ -359,7 +356,7 @@ test('token-utils - serializeTokenData bigint subID', (t) => {
 })
 
 test('token-utils - serializeTokenData short address padded', (t) => {
-  const short = hexToUint8Array('0xabcd')
+  const short = hexToBytes('0xabcd')
   const result = serializeTokenData(short, 0, new Uint8Array(32))
   t.is(result.tokenAddress.length, 20, 'should pad to 20 bytes')
   t.is(result.tokenAddress[18], 0xab, 'should left-pad correctly')

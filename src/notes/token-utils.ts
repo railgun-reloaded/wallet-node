@@ -1,6 +1,5 @@
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3'
-
-import { bigintToUint8Array, hexToUint8Array, padUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
+import { bigIntToBytes, bytesToBigInt, bytesToHex, hexToBytes, padBytesLeft } from '@railgun-reloaded/bytes'
 
 import type { TokenData } from './definitions'
 import { SNARK_PRIME, TokenType } from './definitions'
@@ -12,7 +11,7 @@ import { SNARK_PRIME, TokenType } from './definitions'
  * @returns The token hash as a hex string (32 bytes, no 0x prefix)
  */
 function computeTokenHashERC20 (tokenAddress: Uint8Array): string {
-  return uint8ArrayToHex(padUint8Array(tokenAddress, 32), false)
+  return bytesToHex(padBytesLeft(tokenAddress, 32))
 }
 
 /**
@@ -22,9 +21,9 @@ function computeTokenHashERC20 (tokenAddress: Uint8Array): string {
  * @returns The token hash as a hex string (32 bytes, no 0x prefix)
  */
 function computeTokenHashNFT (tokenData: TokenData): string {
-  const tokenTypeBytes = bigintToUint8Array(BigInt(tokenData.tokenType), 32)
-  const tokenAddressBytes = padUint8Array(tokenData.tokenAddress, 32)
-  const tokenSubIDBytes = padUint8Array(tokenData.tokenSubID, 32)
+  const tokenTypeBytes = bigIntToBytes(BigInt(tokenData.tokenType), 32)
+  const tokenAddressBytes = padBytesLeft(tokenData.tokenAddress, 32)
+  const tokenSubIDBytes = padBytesLeft(tokenData.tokenSubID, 32)
 
   // Combine: tokenType (32) + tokenAddress (32) + tokenSubID (32) = 96 bytes
   const combined = new Uint8Array(96)
@@ -33,9 +32,9 @@ function computeTokenHashNFT (tokenData: TokenData): string {
   combined.set(tokenSubIDBytes, 64)
 
   const hashed: Uint8Array = keccak256(combined)
-  const modulo: bigint = uint8ArrayToBigInt(hashed) % SNARK_PRIME
+  const modulo: bigint = bytesToBigInt(hashed) % SNARK_PRIME
 
-  return uint8ArrayToHex(bigintToUint8Array(modulo, 32), false)
+  return bytesToHex(bigIntToBytes(modulo, 32))
 }
 
 /**
@@ -66,10 +65,10 @@ function computeTokenHash (tokenData: TokenData): string {
 function getReadableTokenAddress (tokenData: TokenData): string {
   switch (tokenData.tokenType) {
     case TokenType.ERC20:
-      return uint8ArrayToHex(tokenData.tokenAddress)
+      return bytesToHex(tokenData.tokenAddress, { prefix: true })
     case TokenType.ERC721:
     case TokenType.ERC1155:
-      return `${uint8ArrayToHex(tokenData.tokenAddress)} (${uint8ArrayToHex(tokenData.tokenSubID)})`
+      return `${bytesToHex(tokenData.tokenAddress, { prefix: true })} (${bytesToHex(tokenData.tokenSubID, { prefix: true })})`
     default:
       throw new Error(`Unrecognized token type: ${tokenData.tokenType}`)
   }
@@ -91,11 +90,11 @@ function serializeTokenData (
   tokenSubID: Uint8Array | bigint
 ): TokenData {
   const normalizedSubID = typeof tokenSubID === 'bigint'
-    ? bigintToUint8Array(tokenSubID, 32)
-    : padUint8Array(tokenSubID, 32)
+    ? bigIntToBytes(tokenSubID, 32)
+    : padBytesLeft(tokenSubID, 32)
 
   return {
-    tokenAddress: padUint8Array(tokenAddress, 20),
+    tokenAddress: padBytesLeft(tokenAddress, 20),
     tokenType: Number(tokenType),
     tokenSubID: normalizedSubID,
   }
@@ -110,7 +109,7 @@ function serializeTokenData (
  * @returns A normalized TokenData object with tokenType=0 and tokenSubID=0
  */
 function getTokenDataERC20 (tokenAddress: string): TokenData {
-  const bytes = hexToUint8Array(tokenAddress)
+  const bytes = hexToBytes(tokenAddress)
   const address = bytes.length > 20 ? bytes.slice(bytes.length - 20) : bytes
   return serializeTokenData(address, 0, TOKEN_SUB_ID_NULL)
 }
@@ -136,12 +135,12 @@ function deserializeTokenData (data: any): TokenData {
   }
 
   const tokenAddress = data.tokenAddress instanceof Uint8Array
-    ? padUint8Array(data.tokenAddress, 20)
-    : padUint8Array(hexToUint8Array(String(data.tokenAddress)), 20)
+    ? padBytesLeft(data.tokenAddress, 20)
+    : padBytesLeft(hexToBytes(String(data.tokenAddress)), 20)
 
   const tokenSubID = data.tokenSubID instanceof Uint8Array
-    ? padUint8Array(data.tokenSubID, 32)
-    : bigintToUint8Array(BigInt(data.tokenSubID), 32)
+    ? padBytesLeft(data.tokenSubID, 32)
+    : bigIntToBytes(BigInt(data.tokenSubID), 32)
 
   return { tokenAddress, tokenType, tokenSubID }
 }

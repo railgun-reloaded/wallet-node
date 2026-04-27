@@ -1,13 +1,8 @@
 import { randomBytes } from '@noble/hashes/utils'
+import { bigIntToBytes, bytesToHex, hexToBytes, hexlify } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 import { hook, test } from 'brittle'
 
-import {
-  bigintToUint8Array,
-  hexToUint8Array,
-  hexlify,
-  uint8ArrayToHex,
-} from '../src/encoding'
 import {
   getNoteBlindingKeys,
   getPublicViewingKey,
@@ -25,7 +20,7 @@ import { computeTokenHash } from '../src/notes/token-utils'
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
 const TEST_VALUE = 1000000000000000000n // 1 ETH
 
-const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 
 const ERC20_TOKEN_DATA = {
   tokenType: 0,
@@ -50,7 +45,7 @@ const mockTokenDataGetter: TokenDataGetter = {
     const addressHex = cleanHash.slice(24) // last 20 bytes
     return {
       tokenType: 0,
-      tokenAddress: hexToUint8Array(addressHex),
+      tokenAddress: hexToBytes(addressHex),
       tokenSubID: new Uint8Array(32),
     }
   }
@@ -137,7 +132,7 @@ test('commitment - decryptCommitment successful roundtrip', async (t) => {
   const encodedMPK = randomBytes(32)
   const tokenHash = randomBytes(32)
   const noteRandom = randomBytes(16)
-  const value = bigintToUint8Array(TEST_VALUE, 16)
+  const value = bigIntToBytes(TEST_VALUE, 16)
 
   const randomValue = new Uint8Array(32)
   randomValue.set(noteRandom, 0)
@@ -163,8 +158,8 @@ test('commitment - decryptCommitment successful roundtrip', async (t) => {
   )
 
   t.ok(result !== null, 'should successfully decrypt')
-  t.is(result!.random, uint8ArrayToHex(noteRandom), 'should recover random')
-  t.is(result!.encodedMPK, uint8ArrayToHex(encodedMPK), 'should recover encodedMPK')
+  t.is(result!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
+  t.is(result!.encodedMPK, bytesToHex(encodedMPK, { prefix: true }), 'should recover encodedMPK')
   t.is(result!.value, TEST_VALUE, 'should recover value')
   t.ok(result!.tokenData, 'should have tokenData')
 })
@@ -192,7 +187,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender identifies receiver', asy
   const tHash = randomBytes(32)
   const randomValue = new Uint8Array(32)
   randomValue.set(randomBytes(16), 0) // random
-  randomValue.set(bigintToUint8Array(TEST_VALUE, 16), 16) // value
+  randomValue.set(bigIntToBytes(TEST_VALUE, 16), 16) // value
 
   // Sender encrypts using their private key + the receiver's blinded key
   const senderSharedKey = await getSharedSymmetricKey(
@@ -251,13 +246,13 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
   //   [2]: Random (16 bytes) + Value (16 bytes)
   const randomValueBlock = new Uint8Array(32)
   randomValueBlock.set(noteRandom, 0)
-  randomValueBlock.set(bigintToUint8Array(noteValue, 16), 16)
+  randomValueBlock.set(bigIntToBytes(noteValue, 16), 16)
 
   // Sender encrypts for receiver: ECDH(senderPrivateKey, blindedReceiverViewingKey)
   const senderSharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
   t.ok(senderSharedKey, 'sender should derive shared key')
 
-  const tokenHashBytes = hexToUint8Array(tokenHash)
+  const tokenHashBytes = hexToBytes(tokenHash)
   const ciphertext = AES.encryptGCM(
     [masterPublicKey, tokenHashBytes, randomValueBlock],
     senderSharedKey!
@@ -275,9 +270,9 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
   )
 
   t.ok(receiverResult !== null, 'receiver should decrypt successfully')
-  t.is(receiverResult!.encodedMPK, uint8ArrayToHex(masterPublicKey), 'should recover MPK')
+  t.is(receiverResult!.encodedMPK, bytesToHex(masterPublicKey, { prefix: true }), 'should recover MPK')
   t.ok(receiverResult!.tokenData, 'should recover token data')
-  t.is(receiverResult!.random, uint8ArrayToHex(noteRandom), 'should recover random')
+  t.is(receiverResult!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
   t.is(receiverResult!.value, noteValue, 'should recover value')
 
   // Sender can also decrypt using receiver's blinded key
