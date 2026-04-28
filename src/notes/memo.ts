@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBytes, hexlify } from '@railgun-reloaded/bytes'
+import { bytesToHex, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import type { CiphertextCTR } from '@railgun-reloaded/cryptography'
 import { AES } from '@railgun-reloaded/cryptography'
 
@@ -60,7 +60,7 @@ class Memo {
     const block0 = new Uint8Array(16)
     block0[0] = outputType
 
-    const senderRandomClean = hexlify(senderRandom)
+    const senderRandomClean = stripHexPrefix(senderRandom).toLowerCase()
     if (senderRandomClean.length !== 30) {
       throw new Error(`senderRandom must be 15 bytes (30 hex chars), got ${senderRandomClean.length}`)
     }

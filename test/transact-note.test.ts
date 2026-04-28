@@ -1,5 +1,5 @@
 import { randomBytes } from '@noble/hashes/utils'
-import { bytesToBigInt, hexToBytes, hexlify } from '@railgun-reloaded/bytes'
+import { bytesToBigInt, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
@@ -36,7 +36,7 @@ const mockTokenDataGetter: TokenDataGetter = {
    * @returns ERC20 token data with address extracted from hash
    */
   async getTokenDataFromHash (_txidVersion, _chain, tokenHash) {
-    const cleanHash = hexlify(tokenHash)
+    const cleanHash = stripHexPrefix(tokenHash).toLowerCase()
     const addressHex = cleanHash.slice(24) // last 20 bytes
     return {
       tokenType: 0,

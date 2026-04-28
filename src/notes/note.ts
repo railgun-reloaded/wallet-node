@@ -1,4 +1,4 @@
-import { bigIntToBytes, hexlify, padBytesLeft } from '@railgun-reloaded/bytes'
+import { bigIntToBytes, padBytesLeft, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { poseidon } from '@railgun-reloaded/cryptography'
 
 import { assertCryptoInitialized } from '../keys'
@@ -66,7 +66,7 @@ abstract class Note {
    * @throws {Error} If validation fails
    */
   static assertValidRandom (random: string): void {
-    const cleanRandom = hexlify(random)
+    const cleanRandom = stripHexPrefix(random).toLowerCase()
 
     if (cleanRandom.length !== 32) {
       throw new Error(
