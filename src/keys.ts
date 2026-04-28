@@ -2,13 +2,10 @@ import * as ed25519 from '@noble/ed25519'
 import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
+import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
 import { eddsa, initCircomlib, initializeEddsa, poseidon, poseidonBuild } from '@railgun-reloaded/cryptography'
 
-import {
-  bigintToUint8Array,
-  uint8ArrayToBigInt,
-  xorBytesInPlace,
-} from './encoding'
+import { xorBytesInPlace } from './encoding'
 
 let cryptoInitialized = false
 
@@ -26,7 +23,7 @@ const CURVE_L = BigInt(
   '7237005577332262213973186563042994240857116359379907606001950938285454250989'
 )
 
-const CURVE_L_BYTES = bigintToUint8Array(CURVE_L)
+const CURVE_L_BYTES = bigIntToBytes(CURVE_L, 32)
 
 // Set the SHA-512 implementation
 // https://github.com/paulmillr/noble-ed25519/blob/main/README.md#enabling-synchronous-methods
@@ -149,9 +146,9 @@ const getPrivateScalarFromPrivateKey = async (
   const head = adjustBytes25519(hash.slice(0, 32), 'le')
 
   // Convert head to scalar
-  const scalarBigInt = uint8ArrayToBigInt(head.reverse()) % CURVE_L
+  const scalarBigInt = bytesToBigInt(head.reverse()) % CURVE_L
 
-  const scalar = bigintToUint8Array(scalarBigInt)
+  const scalar = bigIntToBytes(scalarBigInt, 32)
 
   return scalarBigInt > 0n ? scalar : CURVE_L_BYTES
 }
@@ -210,7 +207,7 @@ const scalarMultiplyWasmFallbackToJavascript = (
  * @param scalar - A `Uint8Array` representing the scalar value to multiply the point by.
  * @returns A `Uint8Array` containing the resulting elliptic curve point after scalar multiplication.
  * This function assumes that the `Point.fromHex` method is used to parse the input point,
- * and the `uint8ArrayToBigInt` function is used to convert the scalar to a `BigInt`.
+ * and the `bytesToBigInt` function is used to convert the scalar to a `BigInt`.
  * The result is returned as raw bytes using the `toRawBytes` method.
  */
 const scalarMultiplyJavascript = (
@@ -218,7 +215,7 @@ const scalarMultiplyJavascript = (
   scalar: Uint8Array
 ) => {
   const pk = Point.fromHex(point)
-  return pk.multiply(uint8ArrayToBigInt(scalar)).toRawBytes()
+  return pk.multiply(bytesToBigInt(scalar)).toRawBytes()
 }
 
 /**
@@ -244,8 +241,9 @@ const seedToScalar = (seed: Uint8Array): Uint8Array => {
   const seedHash = sha512(seed)
 
   // Return (seedHash mod (n - 1)) + 1 to fit to range 0 < scalar < n
-  return bigintToUint8Array(
-    (uint8ArrayToBigInt(seedHash) % ed25519.CURVE.n) - 1n + 1n
+  return bigIntToBytes(
+    (bytesToBigInt(seedHash) % ed25519.CURVE.n) - 1n + 1n,
+    32
   )
 }
 
@@ -267,7 +265,7 @@ const getBlindingScalar = (
   const finalRandom = new Uint8Array(sharedRandom.length)
   xorBytesInPlace(sharedRandom, senderRandom, finalRandom)
 
-  return uint8ArrayToBigInt(seedToScalar(finalRandom))
+  return bytesToBigInt(seedToScalar(finalRandom))
 }
 
 /**

@@ -1,6 +1,6 @@
+import { bigIntToBytes, padBytesLeft, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { bigintToUint8Array, hexlify, padUint8Array } from '../encoding'
 import { assertCryptoInitialized } from '../keys'
 
 import type { TokenData } from './definitions'
@@ -66,7 +66,7 @@ abstract class Note {
    * @throws {Error} If validation fails
    */
   static assertValidRandom (random: string): void {
-    const cleanRandom = hexlify(random)
+    const cleanRandom = stripHexPrefix(random).toLowerCase()
 
     if (cleanRandom.length !== 32) {
       throw new Error(
@@ -85,8 +85,8 @@ abstract class Note {
    */
   static getHash (npk: Uint8Array, tokenHash: Uint8Array, value: bigint): Uint8Array {
     assertCryptoInitialized()
-    const valueBytes = bigintToUint8Array(value, 32)
-    return poseidon([padUint8Array(npk, 32), padUint8Array(tokenHash, 32), valueBytes])
+    const valueBytes = bigIntToBytes(value, 32)
+    return poseidon([padBytesLeft(npk, 32), padBytesLeft(tokenHash, 32), valueBytes])
   }
 
   /**
@@ -99,7 +99,7 @@ abstract class Note {
    */
   static computeNotePublicKey (masterPublicKey: Uint8Array, random: Uint8Array): Uint8Array {
     assertCryptoInitialized()
-    return poseidon([padUint8Array(masterPublicKey, 32), padUint8Array(random, 32)])
+    return poseidon([padBytesLeft(masterPublicKey, 32), padBytesLeft(random, 32)])
   }
 
   /**
@@ -112,7 +112,7 @@ abstract class Note {
    */
   static computeNullifier (nullifyingKey: Uint8Array, leafIndex: bigint): Uint8Array {
     assertCryptoInitialized()
-    return poseidon([nullifyingKey, bigintToUint8Array(leafIndex, 32)])
+    return poseidon([nullifyingKey, bigIntToBytes(leafIndex, 32)])
   }
 
   /**

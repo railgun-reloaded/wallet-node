@@ -1,7 +1,6 @@
+import { bytesToHex, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import type { CiphertextCTR } from '@railgun-reloaded/cryptography'
 import { AES } from '@railgun-reloaded/cryptography'
-
-import { hexToUint8Array, hexlify, uint8ArrayToHex } from '../encoding'
 
 import type { NoteAnnotationData } from './definitions'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from './definitions'
@@ -61,13 +60,13 @@ class Memo {
     const block0 = new Uint8Array(16)
     block0[0] = outputType
 
-    const senderRandomClean = hexlify(senderRandom)
+    const senderRandomClean = stripHexPrefix(senderRandom).toLowerCase()
     if (senderRandomClean.length !== 30) {
       throw new Error(`senderRandom must be 15 bytes (30 hex chars), got ${senderRandomClean.length}`)
     }
 
     // Convert senderRandom hex string to bytes into block0[1..15]
-    block0.set(hexToUint8Array(senderRandomClean), 1)
+    block0.set(hexToBytes(senderRandomClean), 1)
 
     // Block 1: 16 zero bytes (reserved)
     const block1 = new Uint8Array(16)
@@ -134,7 +133,7 @@ class Memo {
         return null
       }
 
-      const senderRandom = uint8ArrayToHex(block0.slice(1, 16), false)
+      const senderRandom = bytesToHex(block0.slice(1, 16))
       if (senderRandom.length !== 30) {
         return null
       }

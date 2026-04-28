@@ -1,11 +1,8 @@
 import { randomBytes } from '@noble/hashes/utils'
+import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 import { hook, test } from 'brittle'
 
-import {
-  hexToUint8Array,
-  uint8ArrayToHex,
-} from '../src/encoding'
 import {
   getPublicViewingKey,
   getSharedSymmetricKey,
@@ -14,7 +11,7 @@ import {
 import { ShieldNote } from '../src/notes/shield-note'
 import { computeTokenHash } from '../src/notes/token-utils'
 
-const TEST_TOKEN_ADDRESS = hexToUint8Array('0x1234567890123456789012345678901234567890')
+const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)
 const TEST_NPK =
   '0x1234567890123456789012345678901234567890123456789012345678901234'
@@ -107,7 +104,7 @@ test('shield-note - serialize and deserialize', async (t) => {
 test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
   const viewingPrivateKey = randomBytes(32)
   const masterPublicKey = randomBytes(32)
-  const noteRandom = hexToUint8Array('0x' + 'ef'.repeat(16))
+  const noteRandom = hexToBytes('0x' + 'ef'.repeat(16))
 
   // Encrypt the random with AES-GCM using viewingPrivateKey
   const ciphertext = AES.encryptGCM([noteRandom], viewingPrivateKey)
@@ -120,7 +117,7 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -148,7 +145,7 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
   )
   t.is(
     shieldNote!.random,
-    uint8ArrayToHex(noteRandom),
+    bytesToHex(noteRandom, { prefix: true }),
     'should decrypt random correctly'
   )
 })
@@ -163,7 +160,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
   const receiverViewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 
   // Build plaintext: random (16 bytes)
-  const noteRandom = hexToUint8Array('0x' + 'ef'.repeat(16))
+  const noteRandom = hexToBytes('0x' + 'ef'.repeat(16))
 
   // Shielder encrypts: ECDH(shieldPrivateKey, receiverViewingPublicKey)
   const sharedKey = await getSharedSymmetricKey(shieldPrivateKey, receiverViewingPublicKey)
@@ -186,13 +183,13 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 1n,
       token: {
         id: new Uint8Array(32),
         tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC721',
-        tokenSubID: hexToUint8Array(
+        tokenSubID: hexToBytes(
           '0x0000000000000000000000000000000000000000000000000000000000000001'
         ),
       },
@@ -211,7 +208,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
   t.is(shieldNote!.value, 1n, 'should set value')
   t.is(
     shieldNote!.random,
-    uint8ArrayToHex(noteRandom),
+    bytesToHex(noteRandom, { prefix: true }),
     'should decrypt random correctly'
   )
   t.is(
@@ -249,7 +246,7 @@ test('shield-note - fromShieldCommitment returns null for wrong key', async (t) 
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -283,13 +280,13 @@ test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', asyn
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 100n,
       token: {
         id: new Uint8Array(32),
         tokenAddress: TEST_TOKEN_ADDRESS,
         tokenType: 'ERC1155',
-        tokenSubID: hexToUint8Array(
+        tokenSubID: hexToBytes(
           '0x0000000000000000000000000000000000000000000000000000000000000005'
         ),
       },
@@ -313,7 +310,7 @@ test('shield-note - fromGeneratedCommitment missing random throws', async (t) =>
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -345,7 +342,7 @@ test('shield-note - fromGeneratedCommitment returns null for wrong viewing key',
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -375,7 +372,7 @@ test('shield-note - fromGeneratedCommitment returns null for invalid tokenType',
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -396,7 +393,7 @@ test('shield-note - serialize and deserialize ERC721', async (t) => {
   const erc721TokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToUint8Array('0x0000000000000000000000000000000000000000000000000000000000000001'),
+    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
   }
 
   const shieldNote = new ShieldNote({
@@ -447,7 +444,7 @@ test('shield-note - fromGeneratedCommitment lowercase tokenType', async (t) => {
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),
@@ -470,7 +467,7 @@ test('shield-note - fromShieldCommitment throws for short encryptedBundle', asyn
     treeNumber: 0,
     treePosition: 0,
     preimage: {
-      npk: hexToUint8Array('0x' + 'ab'.repeat(32)),
+      npk: hexToBytes('0x' + 'ab'.repeat(32)),
       value: 5000n,
       token: {
         id: new Uint8Array(32),

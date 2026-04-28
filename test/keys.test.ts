@@ -1,6 +1,6 @@
+import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { hook, test } from 'brittle'
 
-import { hexToUint8Array, uint8ArrayToHex } from '../src/encoding'
 import {
   adjustBytes25519,
   getBlindingScalar,
@@ -358,13 +358,13 @@ test('keys - sender random blinding distinction', async (t) => {
 })
 
 test('keys - getSharedSymmetricKey known vector', async (t) => {
-  const privateKeyA = hexToUint8Array('0123456789012345678901234567890123456789012345678901234567891234')
-  const blindedPubKeyB = hexToUint8Array('0987654321098765432109876543210987654321098765432109876543210987')
+  const privateKeyA = hexToBytes('0123456789012345678901234567890123456789012345678901234567891234')
+  const blindedPubKeyB = hexToBytes('0987654321098765432109876543210987654321098765432109876543210987')
 
   const result = await getSharedSymmetricKey(privateKeyA, blindedPubKeyB)
   t.ok(result, 'should produce a shared key')
   t.is(
-    uint8ArrayToHex(result!, false),
+    bytesToHex(result!),
     'fbb71adfede43b8a756939500c810d85b16cfbead66d126065639c0cec1fea56',
     'shared key should match known vector'
   )

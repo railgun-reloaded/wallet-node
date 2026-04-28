@@ -1,7 +1,7 @@
 import { stringify } from '@railgun-reloaded/0zk-addresses'
+import { hexToBytes } from '@railgun-reloaded/bytes'
 import { hook, test } from 'brittle'
 
-import { hexToUint8Array } from '../src/encoding'
 import { initializeCryptographyLibs } from '../src/keys'
 import { RailgunWallet } from '../src/wallet/railgun-wallet'
 import { WalletNode } from '../src/wallet/wallet-node'
@@ -181,31 +181,31 @@ test('railgun-wallet - deterministic key derivation', async (t) => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
   t.alike(wallet.getSpendingPrivateKey(),
-    hexToUint8Array('b0958f8bc286ae0832fa83b01b719a225a07ce7b861ff311323f221667b3bd50'),
+    hexToBytes('b0958f8bc286ae0832fa83b01b719a225a07ce7b861ff311323f221667b3bd50'),
     'spending private key should match expected value')
 
   t.alike(wallet.getSpendingPublicKey()[0],
-    hexToUint8Array('22ad4dc014b6e9373771c977a44060b329fd4a585cd1047d67fe5309d3e89e10'),
+    hexToBytes('22ad4dc014b6e9373771c977a44060b329fd4a585cd1047d67fe5309d3e89e10'),
     'spending public key X should match expected value')
 
   t.alike(wallet.getSpendingPublicKey()[1],
-    hexToUint8Array('1a430ec8dc1450fd29a1aedf4760f7c6aa348a2199360a70eadde078593cad04'),
+    hexToBytes('1a430ec8dc1450fd29a1aedf4760f7c6aa348a2199360a70eadde078593cad04'),
     'spending public key Y should match expected value')
 
   t.alike(wallet.getViewingPrivateKey(),
-    hexToUint8Array('9da4b4f0b5493a6ba3f7df0611c3e0842f7e2bb3d640f313b235f1b75c1d80b9'),
+    hexToBytes('9da4b4f0b5493a6ba3f7df0611c3e0842f7e2bb3d640f313b235f1b75c1d80b9'),
     'viewing private key should match expected value')
 
   t.alike(wallet.getViewingPublicKey(),
-    hexToUint8Array('77d7aa7c5b978060be2ba78cbc0ef92a4f3aa3fc29803eaf47847cf510b986ea'),
+    hexToBytes('77d7aa7c5b978060be2ba78cbc0ef92a4f3aa3fc29803eaf47847cf510b986ea'),
     'viewing public key should match expected value')
 
   t.alike(wallet.getNullifyingKey(),
-    hexToUint8Array('12804a19eb4b9bf67d2bafbd0ec05f0bfa071a2344c1688553ef5c4be6f44178'),
+    hexToBytes('12804a19eb4b9bf67d2bafbd0ec05f0bfa071a2344c1688553ef5c4be6f44178'),
     'nullifying key should match expected value')
 
   t.alike(wallet.getMasterPublicKey(),
-    hexToUint8Array('2c59cd4733f911ba740da68fb7ba3b873f21daece4e3a105aef12d6414e54ebf'),
+    hexToBytes('2c59cd4733f911ba740da68fb7ba3b873f21daece4e3a105aef12d6414e54ebf'),
     'master public key should match expected value')
 })
 

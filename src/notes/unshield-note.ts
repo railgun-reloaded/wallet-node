@@ -1,6 +1,5 @@
 import { decode, encode } from '@msgpack/msgpack'
-
-import { hexToUint8Array, uint8ArrayToBigInt, uint8ArrayToHex } from '../encoding'
+import { bytesToBigInt, bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 
 import type { Unshield } from './definitions'
 import { TokenType } from './definitions'
@@ -129,9 +128,9 @@ class UnshieldNote extends Note {
       tokenSubID
     )
 
-    const toAddress = uint8ArrayToHex(to)
-    const tokenHashBytes = hexToUint8Array(computeTokenHash(tokenData))
-    const hash = uint8ArrayToBigInt(Note.getHash(to, tokenHashBytes, amount + fee))
+    const toAddress = bytesToHex(to, { prefix: true })
+    const tokenHashBytes = hexToBytes(computeTokenHash(tokenData))
+    const hash = bytesToBigInt(Note.getHash(to, tokenHashBytes, amount + fee))
 
     return new UnshieldNote({
       notePublicKey: toAddress,
