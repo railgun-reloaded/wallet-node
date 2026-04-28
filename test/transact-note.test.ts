@@ -379,7 +379,7 @@ test('transact-note - serializeLegacy and deserializeLegacy roundtrip', async (t
 
   t.ok(deserialized, 'should deserialize to TransactNote')
   t.is(deserialized!.value, TEST_VALUE, 'should preserve value')
-  // deserializeLegacy returns random with 0x prefix via uint8ArrayToHex
+  // deserializeLegacy returns random with 0x prefix via bytesToHex
   t.is(
     deserialized!.random,
     '0x' + TEST_RANDOM,
