@@ -37,7 +37,7 @@
     "@noble/hashes": "^1.8.0",
     "@railgun-reloaded/0zk-addresses": "https://github.com/railgun-reloaded/0zk-addresses",
     "@railgun-reloaded/bytes": "git+https://github.com/railgun-reloaded/bytes.git#dev",
-    "@railgun-reloaded/cryptography": "git+https://github.com/railgun-reloaded/cryptography.git#chore/migrate-to-bytes-package",
+    "@railgun-reloaded/cryptography": "git+https://github.com/railgun-reloaded/cryptography.git#main",
     "@railgun-reloaded/eslint-config": "^1.1.0",
     "@railgun-reloaded/scanner": "https://github.com/railgun-reloaded/scanner#dev",
     "@railgun-reloaded/tsconfig": "^1.2.0",
