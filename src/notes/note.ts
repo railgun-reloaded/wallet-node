@@ -86,7 +86,7 @@ abstract class Note {
   static getHash (npk: Uint8Array, tokenHash: Uint8Array, value: bigint): Uint8Array {
     assertCryptoInitialized()
     const valueBytes = bigIntToBytes(value, 32)
-    return poseidon([padBytesLeft(npk, 32), padBytesLeft(tokenHash, 32), valueBytes])
+    return poseidon([padBytesLeft(npk, 32, { strict: true }), padBytesLeft(tokenHash, 32, { strict: true }), valueBytes])
   }
 
   /**
@@ -99,7 +99,7 @@ abstract class Note {
    */
   static computeNotePublicKey (masterPublicKey: Uint8Array, random: Uint8Array): Uint8Array {
     assertCryptoInitialized()
-    return poseidon([padBytesLeft(masterPublicKey, 32), padBytesLeft(random, 32)])
+    return poseidon([padBytesLeft(masterPublicKey, 32, { strict: true }), padBytesLeft(random, 32, { strict: true })])
   }
 
   /**

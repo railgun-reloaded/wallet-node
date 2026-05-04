@@ -11,7 +11,7 @@ import { SNARK_PRIME, TokenType } from './definitions'
  * @returns The token hash as a hex string (32 bytes, no 0x prefix)
  */
 function computeTokenHashERC20 (tokenAddress: Uint8Array): string {
-  return bytesToHex(padBytesLeft(tokenAddress, 32))
+  return bytesToHex(padBytesLeft(tokenAddress, 32, { strict: true }))
 }
 
 /**
@@ -22,8 +22,8 @@ function computeTokenHashERC20 (tokenAddress: Uint8Array): string {
  */
 function computeTokenHashNFT (tokenData: TokenData): string {
   const tokenTypeBytes = bigIntToBytes(BigInt(tokenData.tokenType), 32)
-  const tokenAddressBytes = padBytesLeft(tokenData.tokenAddress, 32)
-  const tokenSubIDBytes = padBytesLeft(tokenData.tokenSubID, 32)
+  const tokenAddressBytes = padBytesLeft(tokenData.tokenAddress, 32, { strict: true })
+  const tokenSubIDBytes = padBytesLeft(tokenData.tokenSubID, 32, { strict: true })
 
   // Combine: tokenType (32) + tokenAddress (32) + tokenSubID (32) = 96 bytes
   const combined = new Uint8Array(96)
@@ -91,10 +91,10 @@ function serializeTokenData (
 ): TokenData {
   const normalizedSubID = typeof tokenSubID === 'bigint'
     ? bigIntToBytes(tokenSubID, 32)
-    : padBytesLeft(tokenSubID, 32)
+    : padBytesLeft(tokenSubID, 32, { strict: true })
 
   return {
-    tokenAddress: padBytesLeft(tokenAddress, 20),
+    tokenAddress: padBytesLeft(tokenAddress, 20, { strict: true }),
     tokenType: Number(tokenType),
     tokenSubID: normalizedSubID,
   }
@@ -135,11 +135,11 @@ function deserializeTokenData (data: any): TokenData {
   }
 
   const tokenAddress = data.tokenAddress instanceof Uint8Array
-    ? padBytesLeft(data.tokenAddress, 20)
-    : padBytesLeft(hexToBytes(String(data.tokenAddress)), 20)
+    ? padBytesLeft(data.tokenAddress, 20, { strict: true })
+    : padBytesLeft(hexToBytes(String(data.tokenAddress)), 20, { strict: true })
 
   const tokenSubID = data.tokenSubID instanceof Uint8Array
-    ? padBytesLeft(data.tokenSubID, 32)
+    ? padBytesLeft(data.tokenSubID, 32, { strict: true })
     : bigIntToBytes(BigInt(data.tokenSubID), 32)
 
   return { tokenAddress, tokenType, tokenSubID }
