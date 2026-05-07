@@ -3,7 +3,7 @@ import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
-import { eddsa, initCircomlib, initializeEddsa, poseidon, poseidonBuild } from '@railgun-reloaded/cryptography'
+import { eddsa, initCircomlib, initializeEddsa, poseidon } from '@railgun-reloaded/cryptography'
 
 import { xorBytesInPlace } from './encoding'
 
@@ -49,7 +49,7 @@ ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
 const initializeCryptographyLibs = async () => {
   await initCircomlib('pure')
   await initCircomlib('wasm')
-  await initializeEddsa(poseidonBuild.pure)
+  await initializeEddsa()
   if (typeof eddsa === 'undefined') { throw new Error('EDDSA failed to initialize.') }
   cryptoInitialized = true
 }
