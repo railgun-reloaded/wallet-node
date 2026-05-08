@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
+    "prepare": "tsc --build",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "pretest": "npm run build",
