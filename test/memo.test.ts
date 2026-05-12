@@ -1,30 +1,32 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { randomBytes } from '@noble/hashes/utils'
-import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions'
 import { Memo } from '../src/notes/memo'
 
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('memo - encode and decode undefined memo text', (t) => {
+test('memo - encode and decode undefined memo text', () => {
   const encoded = Memo.encodeMemoText(undefined)
-  t.is(encoded.length, 0, 'Undefined should encode to empty array')
+  assert.equal(encoded.length, 0, 'Undefined should encode to empty array')
   const decoded = Memo.decodeMemoText(new Uint8Array(0))
-  t.is(decoded, null, 'Empty array should decode to null')
+  assert.equal(decoded, null, 'Empty array should decode to null')
 })
 
-test('memo - encode and decode text', (t) => {
+test('memo - encode and decode text', () => {
   const text = 'Private memo field 🤡🙀🥰'
   const encoded = Memo.encodeMemoText(text)
   const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'Should roundtrip text with emojis')
+  assert.equal(decoded, text, 'Should roundtrip text with emojis')
 })
 
-test('memo - encrypt and decrypt V2 annotation data', (t) => {
+test('memo - encrypt and decrypt V2 annotation data', () => {
   const viewingPrivateKey = new Uint8Array(32)
   for (let i = 0; i < 32; i++) viewingPrivateKey[i] = i + 1
 
@@ -33,16 +35,16 @@ test('memo - encrypt and decrypt V2 annotation data', (t) => {
   const walletSource = 'memo wallet'
 
   const encrypted = Memo.encryptAnnotationData(outputType, senderRandom, walletSource, viewingPrivateKey)
-  t.is(encrypted.length, 64, 'Encrypted annotation should be 64 bytes (IV + 3 blocks)')
+  assert.equal(encrypted.length, 64, 'Encrypted annotation should be 64 bytes (IV + 3 blocks)')
 
   const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
-  t.ok(decrypted, 'Should successfully decrypt')
-  t.is(decrypted!.outputType, outputType, 'OutputType should match')
-  t.is(decrypted!.senderRandom, senderRandom, 'SenderRandom should match')
-  t.is(decrypted!.walletSource, walletSource, 'WalletSource should match')
+  assert.ok(decrypted, 'Should successfully decrypt')
+  assert.equal(decrypted!.outputType, outputType, 'OutputType should match')
+  assert.equal(decrypted!.senderRandom, senderRandom, 'SenderRandom should match')
+  assert.equal(decrypted!.walletSource, walletSource, 'WalletSource should match')
 })
 
-test('memo - decrypt with wrong key returns null', (t) => {
+test('memo - decrypt with wrong key returns null', () => {
   const correctKey = new Uint8Array(32)
   for (let i = 0; i < 32; i++) correctKey[i] = i + 1
 
@@ -57,23 +59,23 @@ test('memo - decrypt with wrong key returns null', (t) => {
   )
 
   const decrypted = Memo.decryptAnnotationData(encrypted, wrongKey)
-  t.is(decrypted, null, 'Should return null for wrong key')
+  assert.equal(decrypted, null, 'Should return null for wrong key')
 })
 
-test('memo - decrypt empty annotation returns null', (t) => {
+test('memo - decrypt empty annotation returns null', () => {
   const key = new Uint8Array(32)
   const result = Memo.decryptAnnotationData(new Uint8Array(0), key)
-  t.is(result, null, 'Empty annotation should return null')
+  assert.equal(result, null, 'Empty annotation should return null')
 })
 
-test('memo - throws on invalid senderRandom length', (t) => {
+test('memo - throws on invalid senderRandom length', () => {
   const key = new Uint8Array(32).fill(1)
-  t.exception(() => {
+  assert.throws(() => {
     Memo.encryptAnnotationData(OutputType.Transfer, 'tooshort', 'test', key)
   }, 'Should throw for invalid senderRandom length')
 })
 
-test('memo - decryptSenderRandom returns sender random on success', (t) => {
+test('memo - decryptSenderRandom returns sender random on success', () => {
   const viewingPrivateKey = new Uint8Array(32)
   for (let i = 0; i < 32; i++) viewingPrivateKey[i] = i + 1
 
@@ -86,10 +88,10 @@ test('memo - decryptSenderRandom returns sender random on success', (t) => {
   )
 
   const result = Memo.decryptSenderRandom(encrypted, viewingPrivateKey)
-  t.is(result, senderRandom, 'Should return correct senderRandom')
+  assert.equal(result, senderRandom, 'Should return correct senderRandom')
 })
 
-test('memo - decryptSenderRandom returns null constant on failure', (t) => {
+test('memo - decryptSenderRandom returns null constant on failure', () => {
   const key = new Uint8Array(32).fill(1)
   const wrongKey = new Uint8Array(32).fill(2)
 
@@ -101,10 +103,10 @@ test('memo - decryptSenderRandom returns null constant on failure', (t) => {
   )
 
   const result = Memo.decryptSenderRandom(encrypted, wrongKey)
-  t.is(result, MEMO_SENDER_RANDOM_NULL, 'Should return MEMO_SENDER_RANDOM_NULL on failure')
+  assert.equal(result, MEMO_SENDER_RANDOM_NULL, 'Should return MEMO_SENDER_RANDOM_NULL on failure')
 })
 
-test('memo - annotation data roundtrip for all output types', async (t) => {
+test('memo - annotation data roundtrip for all output types', async () => {
   const viewingPrivateKey = randomBytes(32)
   const senderRandom = '112233445566778899aabbccddeeff' // 15 bytes = 30 hex chars
 
@@ -116,32 +118,32 @@ test('memo - annotation data roundtrip for all output types', async (t) => {
       viewingPrivateKey
     )
     const decrypted = Memo.decryptAnnotationData(encrypted, viewingPrivateKey)
-    t.ok(decrypted !== null, `should decrypt outputType ${outputType}`)
-    t.is(decrypted!.outputType, outputType, `should recover outputType ${outputType}`)
+    assert.ok(decrypted !== null, `should decrypt outputType ${outputType}`)
+    assert.equal(decrypted!.outputType, outputType, `should recover outputType ${outputType}`)
   }
 })
 
-test('memo - decodeMemoText with single byte', (t) => {
+test('memo - decodeMemoText with single byte', () => {
   const encoded = new Uint8Array([0x41]) // 'A'
   const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, 'A', 'should decode single byte')
+  assert.equal(decoded, 'A', 'should decode single byte')
 })
 
-test('memo - decodeMemoText with unicode CJK and Arabic', (t) => {
+test('memo - decodeMemoText with unicode CJK and Arabic', () => {
   const text = '\u4e16\u754c \u0645\u0631\u062d\u0628\u0627'
   const encoded = Memo.encodeMemoText(text)
   const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'should roundtrip CJK and Arabic')
+  assert.equal(decoded, text, 'should roundtrip CJK and Arabic')
 })
 
-test('memo - encodeMemoText / decodeMemoText roundtrip with long text', (t) => {
+test('memo - encodeMemoText / decodeMemoText roundtrip with long text', () => {
   const text = 'a'.repeat(10000)
   const encoded = Memo.encodeMemoText(text)
   const decoded = Memo.decodeMemoText(encoded)
-  t.is(decoded, text, 'should roundtrip 10KB text')
+  assert.equal(decoded, text, 'should roundtrip 10KB text')
 })
 
-test('memo - encryptAnnotationData with empty walletSource', (t) => {
+test('memo - encryptAnnotationData with empty walletSource', () => {
   const key = new Uint8Array(32).fill(1)
   const encrypted = Memo.encryptAnnotationData(
     OutputType.Transfer,
@@ -149,14 +151,14 @@ test('memo - encryptAnnotationData with empty walletSource', (t) => {
     '',
     key
   )
-  t.is(encrypted.length, 64, 'should produce 64-byte output with empty walletSource')
+  assert.equal(encrypted.length, 64, 'should produce 64-byte output with empty walletSource')
 
   const decrypted = Memo.decryptAnnotationData(encrypted, key)
-  t.ok(decrypted, 'should decrypt')
-  t.is(decrypted!.walletSource, undefined, 'walletSource should be undefined for empty source')
+  assert.ok(decrypted, 'should decrypt')
+  assert.equal(decrypted!.walletSource, undefined, 'walletSource should be undefined for empty source')
 })
 
-test('memo - decryptAnnotationData with 32-byte annotationData (single block)', (t) => {
+test('memo - decryptAnnotationData with 32-byte annotationData (single block)', () => {
   const key = new Uint8Array(32).fill(1)
   const encrypted = Memo.encryptAnnotationData(
     OutputType.Transfer,
@@ -168,14 +170,14 @@ test('memo - decryptAnnotationData with 32-byte annotationData (single block)', 
   const singleBlock = encrypted.slice(0, 32)
   const result = Memo.decryptAnnotationData(singleBlock, key)
 
-  t.ok(result !== null, 'should decrypt single-block annotation')
+  assert.ok(result !== null, 'should decrypt single-block annotation')
   if (result) {
-    t.is(result.walletSource, undefined, 'walletSource should be undefined for single block')
+    assert.equal(result.walletSource, undefined, 'walletSource should be undefined for single block')
   }
 })
 
-test('memo - decryptSenderRandom with empty annotationData', (t) => {
+test('memo - decryptSenderRandom with empty annotationData', () => {
   const key = new Uint8Array(32).fill(1)
   const result = Memo.decryptSenderRandom(new Uint8Array(0), key)
-  t.is(result, MEMO_SENDER_RANDOM_NULL, 'should return MEMO_SENDER_RANDOM_NULL for empty data')
+  assert.equal(result, MEMO_SENDER_RANDOM_NULL, 'should return MEMO_SENDER_RANDOM_NULL for empty data')
 })

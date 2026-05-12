@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
-import { test } from 'brittle'
 
 import { Mnemonic } from '../src/mnemonic'
 import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32'
@@ -19,131 +21,131 @@ const SEED_CULTURE_PASSWORD = '87ec3e2ae9294cb5500698e6e6ee8357aa56222badae0e6b4
 const MASTER_KEY_ABANDON = { chainCode: '30d550bc2f61a7c206a1eba3704502da77f366fe69721265b3b7e2c7f05eeabc', chainKey: '1fafc64161d1807e294cc9fded180ca2009aaaedf4cbd7359d4aaa3bb462f411' }
 const MASTER_KEY_MAMMAL = { chainCode: 'b37268d31994f4bbe422feffb3e1dcb35b61b76c0c1ebea2ded5fb0e37aa0809', chainKey: 'c544e07e1007d25b6a3a7ddba8f1e20c2c23c9baec8e9a6200dd6c3b2f8df6a5' }
 
-test('bip39 - Mnemonic.generate', (t) => {
+test('bip39 - Mnemonic.generate', () => {
   const mnemonic128 = Mnemonic.generate(128)
-  t.is(typeof mnemonic128, 'string', 'should return a string')
-  t.is(mnemonic128.split(' ').length, 12, 'should generate 12 words for 128-bit entropy')
+  assert.equal(typeof mnemonic128, 'string', 'should return a string')
+  assert.equal(mnemonic128.split(' ').length, 12, 'should generate 12 words for 128-bit entropy')
 
   const mnemonic192 = Mnemonic.generate(192)
-  t.is(mnemonic192.split(' ').length, 18, 'should generate 18 words for 192-bit entropy')
+  assert.equal(mnemonic192.split(' ').length, 18, 'should generate 18 words for 192-bit entropy')
 
   const mnemonic256 = Mnemonic.generate(256)
-  t.is(mnemonic256.split(' ').length, 24, 'should generate 24 words for 256-bit entropy')
+  assert.equal(mnemonic256.split(' ').length, 24, 'should generate 24 words for 256-bit entropy')
 })
 
-test('bip39 - Mnemonic.validate', (t) => {
-  t.ok(Mnemonic.validate(TEST_MNEMONIC), 'should validate correct mnemonic')
+test('bip39 - Mnemonic.validate', () => {
+  assert.ok(Mnemonic.validate(TEST_MNEMONIC), 'should validate correct mnemonic')
 
-  t.absent(Mnemonic.validate('invalid mnemonic phrase that should not work'), 'should not validate incorrect mnemonic')
-  t.absent(Mnemonic.validate(''), 'should not validate empty string')
+  assert.ok(!Mnemonic.validate('invalid mnemonic phrase that should not work'), 'should not validate incorrect mnemonic')
+  assert.ok(!Mnemonic.validate(''), 'should not validate empty string')
 })
 
-test('bip39 - Mnemonic.toSeed', (t) => {
+test('bip39 - Mnemonic.toSeed', () => {
   const seed = Mnemonic.toSeed(TEST_MNEMONIC)
 
-  t.ok(seed instanceof Uint8Array, 'should return Uint8Array')
-  t.is(seed.length, 64, 'should return 64 bytes')
+  assert.ok(seed instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(seed.length, 64, 'should return 64 bytes')
 
   // Test with password
   const seedWithPassword = Mnemonic.toSeed(TEST_MNEMONIC, 'password123')
-  t.ok(seedWithPassword instanceof Uint8Array, 'should return Uint8Array with password')
-  t.not(seed, seedWithPassword, 'should generate different seed with password')
+  assert.ok(seedWithPassword instanceof Uint8Array, 'should return Uint8Array with password')
+  assert.notEqual(seed, seedWithPassword, 'should generate different seed with password')
 })
 
-test('bip39 - Mnemonic.toSeed deterministic', (t) => {
+test('bip39 - Mnemonic.toSeed deterministic', () => {
   const seed1 = Mnemonic.toSeed(TEST_MNEMONIC)
   const seed2 = Mnemonic.toSeed(TEST_MNEMONIC)
 
-  t.alike(seed1, seed2, 'should generate same seed from same mnemonic')
+  assert.deepEqual(seed1, seed2, 'should generate same seed from same mnemonic')
 })
 
-test('bip39 - Mnemonic.toEntropy and fromEntropy', (t) => {
+test('bip39 - Mnemonic.toEntropy and fromEntropy', () => {
   const entropy = Mnemonic.toEntropy(TEST_MNEMONIC)
 
-  t.ok(entropy instanceof Uint8Array, 'should return Uint8Array')
-  t.ok(entropy.length >= 16, 'entropy should be at least 16 bytes')
+  assert.ok(entropy instanceof Uint8Array, 'should return Uint8Array')
+  assert.ok(entropy.length >= 16, 'entropy should be at least 16 bytes')
 
   const recoveredMnemonic = Mnemonic.fromEntropy(entropy)
-  t.is(recoveredMnemonic, TEST_MNEMONIC, 'should recover same mnemonic from entropy')
+  assert.equal(recoveredMnemonic, TEST_MNEMONIC, 'should recover same mnemonic from entropy')
 })
 
-test('bip39 - Mnemonic.to0xPrivateKey', (t) => {
+test('bip39 - Mnemonic.to0xPrivateKey', () => {
   const privateKey = Mnemonic.to0xPrivateKey(TEST_MNEMONIC)
 
-  t.ok(privateKey instanceof Uint8Array, 'should return Uint8Array')
-  t.is(privateKey.length, 32, 'should return 32 bytes')
+  assert.ok(privateKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(privateKey.length, 32, 'should return 32 bytes')
 })
 
-test('bip39 - Mnemonic.to0xPrivateKey with derivation index', (t) => {
+test('bip39 - Mnemonic.to0xPrivateKey with derivation index', () => {
   const privateKey0 = Mnemonic.to0xPrivateKey(TEST_MNEMONIC, 0)
   const privateKey1 = Mnemonic.to0xPrivateKey(TEST_MNEMONIC, 1)
 
-  t.not(privateKey0, privateKey1, 'should generate different keys for different indices')
+  assert.notEqual(privateKey0, privateKey1, 'should generate different keys for different indices')
 })
 
-test('bip39 - Mnemonic.to0xPrivateKey deterministic', (t) => {
+test('bip39 - Mnemonic.to0xPrivateKey deterministic', () => {
   const privateKey1 = Mnemonic.to0xPrivateKey(TEST_MNEMONIC, 0)
   const privateKey2 = Mnemonic.to0xPrivateKey(TEST_MNEMONIC, 0)
 
-  t.alike(privateKey1, privateKey2, 'should generate same key from same mnemonic and index')
+  assert.deepEqual(privateKey1, privateKey2, 'should generate same key from same mnemonic and index')
 })
 
-test('bip32 - getPathSegments', (t) => {
-  t.alike(getPathSegments("m/44'/0'/0'"), [44, 0, 0], 'should parse simple path correctly')
-  t.alike(getPathSegments("m/44'/1984'/0'/0'/5'"), [44, 1984, 0, 0, 5], 'should parse complex path correctly')
+test('bip32 - getPathSegments', () => {
+  assert.deepEqual(getPathSegments("m/44'/0'/0'"), [44, 0, 0], 'should parse simple path correctly')
+  assert.deepEqual(getPathSegments("m/44'/1984'/0'/0'/5'"), [44, 1984, 0, 0, 5], 'should parse complex path correctly')
 })
 
-test('bip32 - getPathSegments invalid path', (t) => {
-  t.exception(() => {
+test('bip32 - getPathSegments invalid path', () => {
+  assert.throws(() => {
     getPathSegments('invalid/path')
   }, 'should throw error for invalid path')
 
-  t.exception(() => {
+  assert.throws(() => {
     getPathSegments('m/44/0/0')
   }, 'should throw error for non-hardened path')
 })
 
-test('bip32 - getMasterKeyFromSeed', (t) => {
-  t.ok(TEST_MASTER_KEY.chainKey instanceof Uint8Array, 'should return chainKey as Uint8Array')
-  t.ok(TEST_MASTER_KEY.chainCode instanceof Uint8Array, 'should return chainCode as Uint8Array')
-  t.is(TEST_MASTER_KEY.chainKey.length, 32, 'chainKey should be 32 bytes')
-  t.is(TEST_MASTER_KEY.chainCode.length, 32, 'chainCode should be 32 bytes')
+test('bip32 - getMasterKeyFromSeed', () => {
+  assert.ok(TEST_MASTER_KEY.chainKey instanceof Uint8Array, 'should return chainKey as Uint8Array')
+  assert.ok(TEST_MASTER_KEY.chainCode instanceof Uint8Array, 'should return chainCode as Uint8Array')
+  assert.equal(TEST_MASTER_KEY.chainKey.length, 32, 'chainKey should be 32 bytes')
+  assert.equal(TEST_MASTER_KEY.chainCode.length, 32, 'chainCode should be 32 bytes')
 })
 
-test('bip32 - getMasterKeyFromSeed deterministic', (t) => {
+test('bip32 - getMasterKeyFromSeed deterministic', () => {
   const masterKey1 = getMasterKeyFromSeed(TEST_SEED)
   const masterKey2 = getMasterKeyFromSeed(TEST_SEED)
 
-  t.alike(masterKey1.chainKey, masterKey2.chainKey, 'should generate same chainKey')
-  t.alike(masterKey1.chainCode, masterKey2.chainCode, 'should generate same chainCode')
+  assert.deepEqual(masterKey1.chainKey, masterKey2.chainKey, 'should generate same chainKey')
+  assert.deepEqual(masterKey1.chainCode, masterKey2.chainCode, 'should generate same chainCode')
 })
 
-test('bip32 - childKeyDerivationHardened', (t) => {
+test('bip32 - childKeyDerivationHardened', () => {
   const childKey = childKeyDerivationHardened(TEST_MASTER_KEY, 0)
 
-  t.ok(childKey.chainKey instanceof Uint8Array, 'should return chainKey as Uint8Array')
-  t.ok(childKey.chainCode instanceof Uint8Array, 'should return chainCode as Uint8Array')
-  t.is(childKey.chainKey.length, 32, 'chainKey should be 32 bytes')
-  t.is(childKey.chainCode.length, 32, 'chainCode should be 32 bytes')
-  t.not(childKey.chainKey, TEST_MASTER_KEY.chainKey, 'child key should differ from parent')
+  assert.ok(childKey.chainKey instanceof Uint8Array, 'should return chainKey as Uint8Array')
+  assert.ok(childKey.chainCode instanceof Uint8Array, 'should return chainCode as Uint8Array')
+  assert.equal(childKey.chainKey.length, 32, 'chainKey should be 32 bytes')
+  assert.equal(childKey.chainCode.length, 32, 'chainCode should be 32 bytes')
+  assert.notEqual(childKey.chainKey, TEST_MASTER_KEY.chainKey, 'child key should differ from parent')
 })
 
-test('bip32 - childKeyDerivationHardened different indices', (t) => {
+test('bip32 - childKeyDerivationHardened different indices', () => {
   const childKey0 = childKeyDerivationHardened(TEST_MASTER_KEY, 0)
   const childKey1 = childKeyDerivationHardened(TEST_MASTER_KEY, 1)
 
-  t.not(childKey0.chainKey, childKey1.chainKey, 'should generate different keys for different indices')
+  assert.notEqual(childKey0.chainKey, childKey1.chainKey, 'should generate different keys for different indices')
 })
 
-test('bip32 - childKeyDerivationHardened deterministic', (t) => {
+test('bip32 - childKeyDerivationHardened deterministic', () => {
   const childKey1 = childKeyDerivationHardened(TEST_MASTER_KEY, 0)
   const childKey2 = childKeyDerivationHardened(TEST_MASTER_KEY, 0)
 
-  t.alike(childKey1.chainKey, childKey2.chainKey, 'should generate same key for same index')
-  t.alike(childKey1.chainCode, childKey2.chainCode, 'should generate same chainCode for same index')
+  assert.deepEqual(childKey1.chainKey, childKey2.chainKey, 'should generate same key for same index')
+  assert.deepEqual(childKey1.chainCode, childKey2.chainCode, 'should generate same chainCode for same index')
 })
 
-test('bip32 - full derivation path', (t) => {
+test('bip32 - full derivation path', () => {
   let currentKey = getMasterKeyFromSeed(TEST_SEED)
 
   const segments = getPathSegments("m/44'/1984'/0'/0'/5'")
@@ -152,18 +154,18 @@ test('bip32 - full derivation path', (t) => {
     currentKey = childKeyDerivationHardened(currentKey, segment)
   }
 
-  t.ok(currentKey.chainKey instanceof Uint8Array, 'should derive key through full path')
-  t.is(currentKey.chainKey.length, 32, 'derived key should be 32 bytes')
+  assert.ok(currentKey.chainKey instanceof Uint8Array, 'should derive key through full path')
+  assert.equal(currentKey.chainKey.length, 32, 'derived key should be 32 bytes')
 })
 
-test('bip39 - Mnemonic.toSeed known vectors', (t) => {
-  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_ABANDON)), SEED_ABANDON, 'abandon mnemonic seed')
-  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_MAMMAL)), SEED_MAMMAL, 'mammal mnemonic seed')
-  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE)), SEED_CULTURE, 'culture mnemonic seed')
-  t.is(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE, 'test')), SEED_CULTURE_PASSWORD, 'culture mnemonic seed with password')
+test('bip39 - Mnemonic.toSeed known vectors', () => {
+  assert.equal(bytesToHex(Mnemonic.toSeed(MNEMONIC_ABANDON)), SEED_ABANDON, 'abandon mnemonic seed')
+  assert.equal(bytesToHex(Mnemonic.toSeed(MNEMONIC_MAMMAL)), SEED_MAMMAL, 'mammal mnemonic seed')
+  assert.equal(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE)), SEED_CULTURE, 'culture mnemonic seed')
+  assert.equal(bytesToHex(Mnemonic.toSeed(MNEMONIC_CULTURE, 'test')), SEED_CULTURE_PASSWORD, 'culture mnemonic seed with password')
 })
 
-test('bip39 - Mnemonic.toEntropy known vectors', (t) => {
+test('bip39 - Mnemonic.toEntropy known vectors', () => {
   const vectors = [
     { mnemonic: MNEMONIC_ABANDON, entropy: '00000000000000000000000000000000' },
     { mnemonic: MNEMONIC_MAMMAL, entropy: '86baaeb443e00c67bd2db28dc5b531a7bd0302e71127d4f4' },
@@ -171,18 +173,18 @@ test('bip39 - Mnemonic.toEntropy known vectors', (t) => {
   ]
 
   for (const v of vectors) {
-    t.is(bytesToHex(Mnemonic.toEntropy(v.mnemonic)), v.entropy, `entropy for: ${v.mnemonic.slice(0, 10)}...`)
-    t.is(Mnemonic.fromEntropy(hexToBytes(v.entropy)), v.mnemonic, `fromEntropy roundtrip for: ${v.mnemonic.slice(0, 10)}...`)
+    assert.equal(bytesToHex(Mnemonic.toEntropy(v.mnemonic)), v.entropy, `entropy for: ${v.mnemonic.slice(0, 10)}...`)
+    assert.equal(Mnemonic.fromEntropy(hexToBytes(v.entropy)), v.mnemonic, `fromEntropy roundtrip for: ${v.mnemonic.slice(0, 10)}...`)
   }
 })
 
-test('bip39 - Mnemonic.validate known invalid mnemonics', (t) => {
-  t.absent(Mnemonic.validate("Why, sometimes I've believed as many as six impossible things before breakfast."), 'should reject non-mnemonic sentence')
-  t.absent(Mnemonic.validate('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon'), 'should reject bad checksum')
-  t.absent(Mnemonic.validate('chicken'), 'should reject single word')
+test('bip39 - Mnemonic.validate known invalid mnemonics', () => {
+  assert.ok(!Mnemonic.validate("Why, sometimes I've believed as many as six impossible things before breakfast."), 'should reject non-mnemonic sentence')
+  assert.ok(!Mnemonic.validate('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon'), 'should reject bad checksum')
+  assert.ok(!Mnemonic.validate('chicken'), 'should reject single word')
 })
 
-test('bip32 - getMasterKeyFromSeed known vectors', (t) => {
+test('bip32 - getMasterKeyFromSeed known vectors', () => {
   const vectors = [
     { seed: SEED_ABANDON, ...MASTER_KEY_ABANDON },
     { seed: SEED_MAMMAL, ...MASTER_KEY_MAMMAL },
@@ -192,12 +194,12 @@ test('bip32 - getMasterKeyFromSeed known vectors', (t) => {
 
   for (const v of vectors) {
     const mk = getMasterKeyFromSeed(hexToBytes(v.seed))
-    t.is(bytesToHex(mk.chainCode), v.chainCode, 'chainCode should match')
-    t.is(bytesToHex(mk.chainKey), v.chainKey, 'chainKey should match')
+    assert.equal(bytesToHex(mk.chainCode), v.chainCode, 'chainCode should match')
+    assert.equal(bytesToHex(mk.chainKey), v.chainKey, 'chainKey should match')
   }
 })
 
-test('bip32 - childKeyDerivationHardened known vectors', (t) => {
+test('bip32 - childKeyDerivationHardened known vectors', () => {
   const vectors = [
     { parent: MASTER_KEY_ABANDON, index: 0, childChainCode: 'e8e6a1bbce8bab145fe8225435dc98d20d53bd32318ce3ede560b8feef3394a5', childChainKey: '67d7d19d00e6e3b3517fe68ac46505dd207df6e8fe3aa06ba3face352e7599ef' },
     { parent: MASTER_KEY_ABANDON, index: 12, childChainCode: 'ff90a1dcb6531d437dc959b6e03f308dd4d9db7e489bdb30d8b4b1894a9e1344', childChainKey: '9606ae0c844601e0af4d518dce577983ad756dea08726d92c080ed2ca3f5f31d' },
@@ -207,7 +209,7 @@ test('bip32 - childKeyDerivationHardened known vectors', (t) => {
   for (const v of vectors) {
     const parent = { chainCode: hexToBytes(v.parent.chainCode), chainKey: hexToBytes(v.parent.chainKey) }
     const child = childKeyDerivationHardened(parent, v.index)
-    t.is(bytesToHex(child.chainCode), v.childChainCode, `childChainCode at index ${v.index}`)
-    t.is(bytesToHex(child.chainKey), v.childChainKey, `childChainKey at index ${v.index}`)
+    assert.equal(bytesToHex(child.chainCode), v.childChainCode, `childChainCode at index ${v.index}`)
+    assert.equal(bytesToHex(child.chainKey), v.childChainKey, `childChainKey at index ${v.index}`)
   }
 })

@@ -1,6 +1,8 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { stringify } from '@railgun-reloaded/0zk-addresses'
 import { hexToBytes } from '@railgun-reloaded/bytes'
-import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
 import { RailgunWallet } from '../src/wallet/railgun-wallet'
@@ -9,34 +11,28 @@ import { WalletNode } from '../src/wallet/wallet-node'
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 const TEST_MNEMONIC_2 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 
-/**
- * Brittle does not have a built-in beforeAll/beforeEach hook.
- * The hook() function creates a test that always runs even in --solo mode.
- * Placed at the top of the file, it acts as a setup step that runs before
- * all other tests, ensuring cryptography libs are initialized once.
- */
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('wallet-node - WalletNode.fromMnemonic', async (t) => {
+test('wallet-node - WalletNode.fromMnemonic', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
 
-  t.ok(walletNode instanceof WalletNode, 'should return WalletNode instance')
-  t.ok(typeof walletNode.derive === 'function', 'should have derive method')
-  t.ok(typeof walletNode.getSpendingKeyPair === 'function', 'should have getSpendingKeyPair method')
+  assert.ok(walletNode instanceof WalletNode, 'should return WalletNode instance')
+  assert.ok(typeof walletNode.derive === 'function', 'should have derive method')
+  assert.ok(typeof walletNode.getSpendingKeyPair === 'function', 'should have getSpendingKeyPair method')
 })
 
-test('wallet-node - WalletNode.derive', async (t) => {
+test('wallet-node - WalletNode.derive', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const derivedNode = walletNode.derive("m/44'/1984'/0'/0'/0'")
 
-  t.ok(derivedNode instanceof WalletNode, 'should return WalletNode instance')
-  t.not(derivedNode, walletNode, 'should return new instance')
+  assert.ok(derivedNode instanceof WalletNode, 'should return WalletNode instance')
+  assert.notEqual(derivedNode, walletNode, 'should return new instance')
 })
 
-test('wallet-node - WalletNode.derive multiple paths', async (t) => {
+test('wallet-node - WalletNode.derive multiple paths', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const derived1 = walletNode.derive("m/44'/1984'/0'/0'/0'")
   const derived2 = walletNode.derive("m/44'/1984'/0'/0'/1'")
@@ -44,113 +40,113 @@ test('wallet-node - WalletNode.derive multiple paths', async (t) => {
   const key1 = derived1.getSpendingKeyPair()
   const key2 = derived2.getSpendingKeyPair()
 
-  t.not(key1.privateKey, key2.privateKey, 'should generate different keys for different paths')
+  assert.notEqual(key1.privateKey, key2.privateKey, 'should generate different keys for different paths')
 })
 
-test('wallet-node - WalletNode.getSpendingKeyPair', async (t) => {
+test('wallet-node - WalletNode.getSpendingKeyPair', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const keyPair = walletNode.getSpendingKeyPair()
 
-  t.ok(keyPair.privateKey instanceof Uint8Array, 'should return privateKey as Uint8Array')
-  t.ok(Array.isArray(keyPair.pubkey), 'should return pubkey as array')
-  t.is(keyPair.pubkey.length, 2, 'pubkey should have 2 elements')
-  t.is(keyPair.privateKey.length, 32, 'privateKey should be 32 bytes')
+  assert.ok(keyPair.privateKey instanceof Uint8Array, 'should return privateKey as Uint8Array')
+  assert.ok(Array.isArray(keyPair.pubkey), 'should return pubkey as array')
+  assert.equal(keyPair.pubkey.length, 2, 'pubkey should have 2 elements')
+  assert.equal(keyPair.privateKey.length, 32, 'privateKey should be 32 bytes')
 })
 
-test('wallet-node - WalletNode.getViewingKeyPair', async (t) => {
+test('wallet-node - WalletNode.getViewingKeyPair', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const keyPair = walletNode.getViewingKeyPair()
 
-  t.ok(keyPair.privateKey instanceof Uint8Array, 'should return privateKey as Uint8Array')
-  t.ok(keyPair.pubkey instanceof Uint8Array, 'should return pubkey as Uint8Array')
-  t.is(keyPair.privateKey.length, 32, 'privateKey should be 32 bytes')
-  t.is(keyPair.pubkey.length, 32, 'pubkey should be 32 bytes')
+  assert.ok(keyPair.privateKey instanceof Uint8Array, 'should return privateKey as Uint8Array')
+  assert.ok(keyPair.pubkey instanceof Uint8Array, 'should return pubkey as Uint8Array')
+  assert.equal(keyPair.privateKey.length, 32, 'privateKey should be 32 bytes')
+  assert.equal(keyPair.pubkey.length, 32, 'pubkey should be 32 bytes')
 })
 
-test('wallet-node - WalletNode.getNullifyingKey', async (t) => {
+test('wallet-node - WalletNode.getNullifyingKey', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const nullifyingKey = walletNode.getNullifyingKey()
 
-  t.ok(nullifyingKey instanceof Uint8Array, 'should return Uint8Array')
-  t.ok(nullifyingKey.length > 0, 'should return non-empty array')
+  assert.ok(nullifyingKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.ok(nullifyingKey.length > 0, 'should return non-empty array')
 })
 
-test('wallet-node - WalletNode.getMasterPublicKey', async (t) => {
+test('wallet-node - WalletNode.getMasterPublicKey', async () => {
   const walletNode = WalletNode.fromMnemonic(TEST_MNEMONIC)
   const spendingKeyPair = walletNode.getSpendingKeyPair()
   const nullifyingKey = walletNode.getNullifyingKey()
 
   const masterPublicKey = WalletNode.getMasterPublicKey(spendingKeyPair.pubkey, nullifyingKey)
 
-  t.ok(masterPublicKey instanceof Uint8Array, 'should return Uint8Array')
-  t.ok(masterPublicKey.length > 0, 'should return non-empty array')
+  assert.ok(masterPublicKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.ok(masterPublicKey.length > 0, 'should return non-empty array')
 })
 
-test('railgun-wallet - RailgunWallet initialization', async (t) => {
+test('railgun-wallet - RailgunWallet initialization', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
-  t.ok(wallet instanceof RailgunWallet, 'should create RailgunWallet instance')
+  assert.ok(wallet instanceof RailgunWallet, 'should create RailgunWallet instance')
 })
 
-test('railgun-wallet - RailgunWallet.getSpendingPrivateKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getSpendingPrivateKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const privateKey = wallet.getSpendingPrivateKey()
 
-  t.ok(privateKey instanceof Uint8Array, 'should return Uint8Array')
-  t.is(privateKey.length, 32, 'should return 32 bytes')
+  assert.ok(privateKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(privateKey.length, 32, 'should return 32 bytes')
 })
 
-test('railgun-wallet - RailgunWallet.getSpendingPublicKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getSpendingPublicKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const publicKey = wallet.getSpendingPublicKey()
 
-  t.ok(Array.isArray(publicKey), 'should return array')
-  t.is(publicKey.length, 2, 'should have 2 elements')
+  assert.ok(Array.isArray(publicKey), 'should return array')
+  assert.equal(publicKey.length, 2, 'should have 2 elements')
 })
 
-test('railgun-wallet - RailgunWallet.getMasterPublicKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getMasterPublicKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const masterPublicKey = wallet.getMasterPublicKey()
 
-  t.ok(masterPublicKey instanceof Uint8Array, 'should return Uint8Array')
-  t.ok(masterPublicKey.length > 0, 'should return non-empty array')
+  assert.ok(masterPublicKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.ok(masterPublicKey.length > 0, 'should return non-empty array')
 })
 
-test('railgun-wallet - RailgunWallet.getNullifyingKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getNullifyingKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const nullifyingKey = wallet.getNullifyingKey()
 
-  t.ok(nullifyingKey instanceof Uint8Array, 'should return Uint8Array')
-  t.ok(nullifyingKey.length > 0, 'should return non-empty array')
+  assert.ok(nullifyingKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.ok(nullifyingKey.length > 0, 'should return non-empty array')
 })
 
-test('railgun-wallet - RailgunWallet.getViewingPublicKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getViewingPublicKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const viewingPublicKey = wallet.getViewingPublicKey()
 
-  t.ok(viewingPublicKey instanceof Uint8Array, 'should return Uint8Array')
-  t.is(viewingPublicKey.length, 32, 'should return 32 bytes')
+  assert.ok(viewingPublicKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(viewingPublicKey.length, 32, 'should return 32 bytes')
 })
 
-test('railgun-wallet - RailgunWallet.getViewingPrivateKey', async (t) => {
+test('railgun-wallet - RailgunWallet.getViewingPrivateKey', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
   const viewingPrivateKey = wallet.getViewingPrivateKey()
 
-  t.ok(viewingPrivateKey instanceof Uint8Array, 'should return Uint8Array')
-  t.is(viewingPrivateKey.length, 32, 'should return 32 bytes')
+  assert.ok(viewingPrivateKey instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(viewingPrivateKey.length, 32, 'should return 32 bytes')
 })
 
-test('railgun-wallet - RailgunWallet with custom index', async (t) => {
+test('railgun-wallet - RailgunWallet with custom index', async () => {
   const wallet0 = new RailgunWallet(TEST_MNEMONIC, 0)
   const wallet1 = new RailgunWallet(TEST_MNEMONIC, 1)
 
   const key0 = wallet0.getSpendingPrivateKey()
   const key1 = wallet1.getSpendingPrivateKey()
 
-  t.not(key0, key1, 'should generate different keys for different indices')
+  assert.notEqual(key0, key1, 'should generate different keys for different indices')
 })
 
-test('railgun-wallet - RailgunWallet generates expected address', async (t) => {
+test('railgun-wallet - RailgunWallet generates expected address', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
   const expectedAddress = stringify({
@@ -173,49 +169,49 @@ test('railgun-wallet - RailgunWallet generates expected address', async (t) => {
     viewingPublicKey: wallet.getViewingPublicKey(),
   })
 
-  t.is(expectedAddress, '0zk1qyk9nn28x0u3rwn5pknglda68wrn7gw6anjw8gg94mcj6eq5u48tlrv7j6fe3z53lama02nutwtcqc979wnce0qwly4y7w4rls5cq040g7z8eagshxrw5ajy990', 'expected address constant should be correct')
-  t.is(expectedAddress, railgunAddress, 'wallet should generate expected address')
+  assert.equal(expectedAddress, '0zk1qyk9nn28x0u3rwn5pknglda68wrn7gw6anjw8gg94mcj6eq5u48tlrv7j6fe3z53lama02nutwtcqc979wnce0qwly4y7w4rls5cq040g7z8eagshxrw5ajy990', 'expected address constant should be correct')
+  assert.equal(expectedAddress, railgunAddress, 'wallet should generate expected address')
 })
 
-test('railgun-wallet - deterministic key derivation', async (t) => {
+test('railgun-wallet - deterministic key derivation', async () => {
   const wallet = new RailgunWallet(TEST_MNEMONIC)
 
-  t.alike(wallet.getSpendingPrivateKey(),
+  assert.deepEqual(wallet.getSpendingPrivateKey(),
     hexToBytes('b0958f8bc286ae0832fa83b01b719a225a07ce7b861ff311323f221667b3bd50'),
     'spending private key should match expected value')
 
-  t.alike(wallet.getSpendingPublicKey()[0],
+  assert.deepEqual(wallet.getSpendingPublicKey()[0],
     hexToBytes('22ad4dc014b6e9373771c977a44060b329fd4a585cd1047d67fe5309d3e89e10'),
     'spending public key X should match expected value')
 
-  t.alike(wallet.getSpendingPublicKey()[1],
+  assert.deepEqual(wallet.getSpendingPublicKey()[1],
     hexToBytes('1a430ec8dc1450fd29a1aedf4760f7c6aa348a2199360a70eadde078593cad04'),
     'spending public key Y should match expected value')
 
-  t.alike(wallet.getViewingPrivateKey(),
+  assert.deepEqual(wallet.getViewingPrivateKey(),
     hexToBytes('9da4b4f0b5493a6ba3f7df0611c3e0842f7e2bb3d640f313b235f1b75c1d80b9'),
     'viewing private key should match expected value')
 
-  t.alike(wallet.getViewingPublicKey(),
+  assert.deepEqual(wallet.getViewingPublicKey(),
     hexToBytes('77d7aa7c5b978060be2ba78cbc0ef92a4f3aa3fc29803eaf47847cf510b986ea'),
     'viewing public key should match expected value')
 
-  t.alike(wallet.getNullifyingKey(),
+  assert.deepEqual(wallet.getNullifyingKey(),
     hexToBytes('12804a19eb4b9bf67d2bafbd0ec05f0bfa071a2344c1688553ef5c4be6f44178'),
     'nullifying key should match expected value')
 
-  t.alike(wallet.getMasterPublicKey(),
+  assert.deepEqual(wallet.getMasterPublicKey(),
     hexToBytes('2c59cd4733f911ba740da68fb7ba3b873f21daece4e3a105aef12d6414e54ebf'),
     'master public key should match expected value')
 })
 
-test('railgun-wallet - RailgunWallet.getShieldPrivateKeySignatureMessage', (t) => {
+test('railgun-wallet - RailgunWallet.getShieldPrivateKeySignatureMessage', () => {
   const message = RailgunWallet.getShieldPrivateKeySignatureMessage()
 
-  t.is(message, 'RAILGUN_SHIELD', 'should return correct constant message')
+  assert.equal(message, 'RAILGUN_SHIELD', 'should return correct constant message')
 })
 
-test('railgun-wallet - Different mnemonics generate different wallets', async (t) => {
+test('railgun-wallet - Different mnemonics generate different wallets', async () => {
   const wallet1 = new RailgunWallet(TEST_MNEMONIC, 0)
   const wallet2 = new RailgunWallet(TEST_MNEMONIC_2, 0)
 
@@ -229,5 +225,5 @@ test('railgun-wallet - Different mnemonics generate different wallets', async (t
     viewingPublicKey: wallet2.getViewingPublicKey(),
   })
 
-  t.not(address1, address2, 'different mnemonics should generate different addresses')
+  assert.notEqual(address1, address2, 'different mnemonics should generate different addresses')
 })

@@ -1,7 +1,9 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToHex, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
-import { hook, test } from 'brittle'
 
 import {
   getNoteBlindingKeys,
@@ -51,18 +53,12 @@ const mockTokenDataGetter: TokenDataGetter = {
   }
 }
 
-/**
- * Brittle does not have a built-in beforeAll/beforeEach hook.
- * The hook() function creates a test that always runs even in --solo mode.
- * Placed at the top of the file, it acts as a setup step that runs before
- * all other tests, ensuring cryptography libs are initialized once.
- */
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('commitment - decryptCommitment with invalid key returns null', async (t) => {
+test('commitment - decryptCommitment with invalid key returns null', async () => {
   const ciphertext = {
     iv: randomBytes(16),
     tag: randomBytes(16),
@@ -80,10 +76,10 @@ test('commitment - decryptCommitment with invalid key returns null', async (t) =
     mockTokenDataGetter
   )
 
-  t.is(result, null, 'should return null for invalid decryption')
+  assert.equal(result, null, 'should return null for invalid decryption')
 })
 
-test('commitment - decryptCommitmentAsReceiverOrSender with invalid keys returns null', async (t) => {
+test('commitment - decryptCommitmentAsReceiverOrSender with invalid keys returns null', async () => {
   const ciphertext = {
     iv: randomBytes(16),
     tag: randomBytes(16),
@@ -103,11 +99,11 @@ test('commitment - decryptCommitmentAsReceiverOrSender with invalid keys returns
     mockTokenDataGetter
   )
 
-  t.is(result.receiverData, null, 'should return null receiver data when unable to decrypt')
-  t.is(result.senderData, null, 'should return null sender data when unable to decrypt')
+  assert.equal(result.receiverData, null, 'should return null receiver data when unable to decrypt')
+  assert.equal(result.senderData, null, 'should return null sender data when unable to decrypt')
 })
 
-test('commitment - decryptCommitment successful roundtrip', async (t) => {
+test('commitment - decryptCommitment successful roundtrip', async () => {
   const viewingPrivateKey = randomBytes(32)
   const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 
@@ -143,7 +139,7 @@ test('commitment - decryptCommitment successful roundtrip', async (t) => {
     viewingPrivateKey,
     blindedReceiverViewingKey
   )
-  t.ok(sharedKey, 'should generate shared key')
+  assert.ok(sharedKey, 'should generate shared key')
 
   const ciphertext = AES.encryptGCM([encodedMPK, tokenHash, randomValue], sharedKey!)
 
@@ -157,14 +153,14 @@ test('commitment - decryptCommitment successful roundtrip', async (t) => {
     mockTokenDataGetter
   )
 
-  t.ok(result !== null, 'should successfully decrypt')
-  t.is(result!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
-  t.is(result!.encodedMPK, bytesToHex(encodedMPK, { prefix: true }), 'should recover encodedMPK')
-  t.is(result!.value, TEST_VALUE, 'should recover value')
-  t.ok(result!.tokenData, 'should have tokenData')
+  assert.ok(result !== null, 'should successfully decrypt')
+  assert.equal(result!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
+  assert.equal(result!.encodedMPK, bytesToHex(encodedMPK, { prefix: true }), 'should recover encodedMPK')
+  assert.equal(result!.value, TEST_VALUE, 'should recover value')
+  assert.ok(result!.tokenData, 'should have tokenData')
 })
 
-test('commitment - decryptCommitmentAsReceiverOrSender identifies receiver', async (t) => {
+test('commitment - decryptCommitmentAsReceiverOrSender identifies receiver', async () => {
   // Receiver's key pair
   const viewingPrivateKey = randomBytes(32)
   const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
@@ -207,12 +203,12 @@ test('commitment - decryptCommitmentAsReceiverOrSender identifies receiver', asy
     mockTokenDataGetter
   )
 
-  t.ok(result.receiverData !== null, 'should decrypt as receiver')
-  t.is(result.senderData, null, 'should not decrypt as sender')
-  t.is(result.receiverData!.value, TEST_VALUE, 'should recover value')
+  assert.ok(result.receiverData !== null, 'should decrypt as receiver')
+  assert.equal(result.senderData, null, 'should not decrypt as sender')
+  assert.equal(result.receiverData!.value, TEST_VALUE, 'should recover value')
 })
 
-test('commitment - real-world two-party encrypt/decrypt', async (t) => {
+test('commitment - real-world two-party encrypt/decrypt', async () => {
   // Simulate a real transact commitment:
   // Sender creates a note for the receiver with known token data
 
@@ -250,7 +246,7 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
 
   // Sender encrypts for receiver: ECDH(senderPrivateKey, blindedReceiverViewingKey)
   const senderSharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
-  t.ok(senderSharedKey, 'sender should derive shared key')
+  assert.ok(senderSharedKey, 'sender should derive shared key')
 
   const tokenHashBytes = hexToBytes(tokenHash)
   const ciphertext = AES.encryptGCM(
@@ -269,11 +265,11 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
     mockTokenDataGetter
   )
 
-  t.ok(receiverResult !== null, 'receiver should decrypt successfully')
-  t.is(receiverResult!.encodedMPK, bytesToHex(masterPublicKey, { prefix: true }), 'should recover MPK')
-  t.ok(receiverResult!.tokenData, 'should recover token data')
-  t.is(receiverResult!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
-  t.is(receiverResult!.value, noteValue, 'should recover value')
+  assert.ok(receiverResult !== null, 'receiver should decrypt successfully')
+  assert.equal(receiverResult!.encodedMPK, bytesToHex(masterPublicKey, { prefix: true }), 'should recover MPK')
+  assert.ok(receiverResult!.tokenData, 'should recover token data')
+  assert.equal(receiverResult!.random, bytesToHex(noteRandom, { prefix: true }), 'should recover random')
+  assert.equal(receiverResult!.value, noteValue, 'should recover value')
 
   // Sender can also decrypt using receiver's blinded key
   const senderResult = await decryptCommitment(
@@ -284,8 +280,8 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
     senderPrivateKey,
     mockTokenDataGetter
   )
-  t.ok(senderResult !== null, 'sender should also decrypt successfully')
-  t.is(senderResult!.value, noteValue, 'sender should recover same value')
+  assert.ok(senderResult !== null, 'sender should also decrypt successfully')
+  assert.equal(senderResult!.value, noteValue, 'sender should recover same value')
 
   // A third party with a different key should NOT be able to decrypt
   const thirdPartyKey = randomBytes(32)
@@ -297,7 +293,7 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
     thirdPartyKey,
     mockTokenDataGetter
   )
-  t.is(thirdPartyResult, null, 'third party should not decrypt')
+  assert.equal(thirdPartyResult, null, 'third party should not decrypt')
 
   // Full decryptCommitmentAsReceiverOrSender from receiver's perspective
   const fullResult = await decryptCommitmentAsReceiverOrSender(
@@ -309,12 +305,12 @@ test('commitment - real-world two-party encrypt/decrypt', async (t) => {
     receiverPrivateKey,
     mockTokenDataGetter
   )
-  t.ok(fullResult.receiverData !== null, 'receiver data should be present')
-  t.is(fullResult.receiverData!.value, noteValue, 'receiver should recover value via full function')
-  t.is(fullResult.senderData, null, 'receiver should not appear as sender')
+  assert.ok(fullResult.receiverData !== null, 'receiver data should be present')
+  assert.equal(fullResult.receiverData!.value, noteValue, 'receiver should recover value via full function')
+  assert.equal(fullResult.senderData, null, 'receiver should not appear as sender')
 })
 
-test('commitment - decryptCommitment with ciphertext data < 3 blocks returns null', async (t) => {
+test('commitment - decryptCommitment with ciphertext data < 3 blocks returns null', async () => {
   const viewingPrivateKey = randomBytes(32)
   const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 
@@ -332,7 +328,7 @@ test('commitment - decryptCommitment with ciphertext data < 3 blocks returns nul
   )
 
   const sharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
-  t.ok(sharedKey, 'should derive shared key')
+  assert.ok(sharedKey, 'should derive shared key')
 
   const ciphertext = AES.encryptGCM([randomBytes(32), randomBytes(32)], sharedKey!)
 
@@ -345,10 +341,10 @@ test('commitment - decryptCommitment with ciphertext data < 3 blocks returns nul
     mockTokenDataGetter
   )
 
-  t.is(result, null, 'should return null when ciphertext has < 3 data blocks')
+  assert.equal(result, null, 'should return null when ciphertext has < 3 data blocks')
 })
 
-test('commitment - decryptCommitment with randomValue block < 32 bytes returns null', async (t) => {
+test('commitment - decryptCommitment with randomValue block < 32 bytes returns null', async () => {
   const viewingPrivateKey = randomBytes(32)
   const viewingPublicKey = getPublicViewingKey(viewingPrivateKey)
 
@@ -366,7 +362,7 @@ test('commitment - decryptCommitment with randomValue block < 32 bytes returns n
   )
 
   const sharedKey = await getSharedSymmetricKey(senderPrivateKey, blindedReceiverViewingKey)
-  t.ok(sharedKey, 'should derive shared key')
+  assert.ok(sharedKey, 'should derive shared key')
 
   const ciphertext = AES.encryptGCM(
     [randomBytes(32), randomBytes(32), randomBytes(16)],
@@ -382,10 +378,10 @@ test('commitment - decryptCommitment with randomValue block < 32 bytes returns n
     mockTokenDataGetter
   )
 
-  t.is(result, null, 'should return null when randomValue block is < 32 bytes')
+  assert.equal(result, null, 'should return null when randomValue block is < 32 bytes')
 })
 
-test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded receiver key', async (t) => {
+test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded receiver key', async () => {
   const ciphertext = {
     iv: randomBytes(16),
     tag: randomBytes(16),
@@ -402,10 +398,10 @@ test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded receiv
     mockTokenDataGetter
   )
 
-  t.is(result.senderData, null, 'sender data should be null with empty receiver key')
+  assert.equal(result.senderData, null, 'sender data should be null with empty receiver key')
 })
 
-test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded sender key', async (t) => {
+test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded sender key', async () => {
   const ciphertext = {
     iv: randomBytes(16),
     tag: randomBytes(16),
@@ -422,10 +418,10 @@ test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded sender
     mockTokenDataGetter
   )
 
-  t.is(result.receiverData, null, 'receiver data should be null with empty sender key')
+  assert.equal(result.receiverData, null, 'receiver data should be null with empty sender key')
 })
 
-test('commitment - decryptCommitmentAsReceiverOrSender with both keys empty', async (t) => {
+test('commitment - decryptCommitmentAsReceiverOrSender with both keys empty', async () => {
   const ciphertext = {
     iv: randomBytes(16),
     tag: randomBytes(16),
@@ -442,6 +438,6 @@ test('commitment - decryptCommitmentAsReceiverOrSender with both keys empty', as
     mockTokenDataGetter
   )
 
-  t.is(result.receiverData, null, 'receiver data should be null')
-  t.is(result.senderData, null, 'sender data should be null')
+  assert.equal(result.receiverData, null, 'receiver data should be null')
+  assert.equal(result.senderData, null, 'sender data should be null')
 })

@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { bytesToBigInt, bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
-import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
 import { Note } from '../src/notes/note'
@@ -16,43 +18,37 @@ const ERC20_TOKEN_DATA = {
   tokenSubID: new Uint8Array(32),
 }
 
-/**
- * Brittle does not have a built-in beforeAll/beforeEach hook.
- * The hook() function creates a test that always runs even in --solo mode.
- * Placed at the top of the file, it acts as a setup step that runs before
- * all other tests, ensuring cryptography libs are initialized once.
- */
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('Note.assertValidRandom valid', (t) => {
-  t.execution(() => {
+test('Note.assertValidRandom valid', () => {
+  assert.doesNotThrow(() => {
     Note.assertValidRandom(TEST_RANDOM)
   }, 'should not throw for valid random')
 
-  t.execution(() => {
+  assert.doesNotThrow(() => {
     Note.assertValidRandom('0x' + TEST_RANDOM)
   }, 'should not throw for valid random with 0x prefix')
 })
 
-test('Note.assertValidRandom invalid length', (t) => {
-  t.exception(() => {
+test('Note.assertValidRandom invalid length', () => {
+  assert.throws(() => {
     Note.assertValidRandom('0x12345678')
   }, 'should throw for short random')
 
-  t.exception(() => {
+  assert.throws(() => {
     Note.assertValidRandom('0x' + '12'.repeat(100))
   }, 'should throw for long random')
 })
 
-test('Note.getHash - known vector and properties', async (t) => {
+test('Note.getHash - known vector and properties', async () => {
   const npkBytes = hexToBytes(TEST_NPK)
   const tokenHashBytes = hexToBytes(computeTokenHash(ERC20_TOKEN_DATA))
 
   const hash1 = Note.getHash(npkBytes, tokenHashBytes, BigInt('1000000000000000000'))
-  t.is(
+  assert.equal(
     bytesToBigInt(hash1),
     383327982694222908883234614730482634434594360360520710439697655391370961429n,
     'should match known poseidon hash'
@@ -60,82 +56,82 @@ test('Note.getHash - known vector and properties', async (t) => {
 
   // Different value produces different hash
   const hash2 = Note.getHash(npkBytes, tokenHashBytes, BigInt('2000000000000000000'))
-  t.not(bytesToHex(hash1, { prefix: true }), bytesToHex(hash2, { prefix: true }), 'different values should produce different hashes')
+  assert.notEqual(bytesToHex(hash1, { prefix: true }), bytesToHex(hash2, { prefix: true }), 'different values should produce different hashes')
 
   // Different address produces different hash
   const address2 = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd'
   const hash3 = Note.getHash(hexToBytes(address2), tokenHashBytes, BigInt('1000000000000000000'))
-  t.not(bytesToHex(hash1, { prefix: true }), bytesToHex(hash3, { prefix: true }), 'different addresses should produce different hashes')
+  assert.notEqual(bytesToHex(hash1, { prefix: true }), bytesToHex(hash3, { prefix: true }), 'different addresses should produce different hashes')
 })
 
-test('Note.getHash - zero value', (t) => {
+test('Note.getHash - zero value', () => {
   const npkBytes = hexToBytes(TEST_NPK)
   const tokenHashBytes = hexToBytes(computeTokenHash(ERC20_TOKEN_DATA))
 
   const hash = Note.getHash(npkBytes, tokenHashBytes, 0n)
-  t.ok(hash instanceof Uint8Array, 'should return Uint8Array for zero value')
-  t.is(hash.length, 32, 'should be 32 bytes')
+  assert.ok(hash instanceof Uint8Array, 'should return Uint8Array for zero value')
+  assert.equal(hash.length, 32, 'should be 32 bytes')
 })
 
-test('Note.getHash - determinism', (t) => {
+test('Note.getHash - determinism', () => {
   const npkBytes = hexToBytes(TEST_NPK)
   const tokenHashBytes = hexToBytes(computeTokenHash(ERC20_TOKEN_DATA))
 
   const hash1 = Note.getHash(npkBytes, tokenHashBytes, 42n)
   const hash2 = Note.getHash(npkBytes, tokenHashBytes, 42n)
-  t.alike(hash1, hash2, 'same inputs should produce same hash')
+  assert.deepEqual(hash1, hash2, 'same inputs should produce same hash')
 })
 
-test('Note.assertValidRandom - empty string', (t) => {
-  t.exception(() => {
+test('Note.assertValidRandom - empty string', () => {
+  assert.throws(() => {
     Note.assertValidRandom('')
   }, 'should throw for empty string')
 })
 
-test('Note.computeNotePublicKey - known vector', (t) => {
+test('Note.computeNotePublicKey - known vector', () => {
   const mpk = hexToBytes('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
   const random = hexToBytes('aabbccdd11223344aabbccdd11223344')
   const npk = Note.computeNotePublicKey(mpk, random)
-  t.is(
+  assert.equal(
     bytesToHex(npk, { prefix: true }),
     '0x29ff6e77d641ba129aa692e36df05f05ae731a93c232f613e137e09058a79d1c',
     'should match known poseidon(mpk, random)'
   )
 })
 
-test('Note.computeNotePublicKey - 16-byte random is padded to 32 bytes', (t) => {
+test('Note.computeNotePublicKey - 16-byte random is padded to 32 bytes', () => {
   const mpk = hexToBytes('1234567890123456789012345678901234567890123456789012345678901234')
   const random16 = hexToBytes('aabbccdd11223344aabbccdd11223344')
   const random32 = hexToBytes('00000000000000000000000000000000aabbccdd11223344aabbccdd11223344')
   const npk16 = Note.computeNotePublicKey(mpk, random16)
   const npk32 = Note.computeNotePublicKey(mpk, random32)
-  t.alike(npk16, npk32, 'padded 16-byte random should equal explicit 32-byte zero-padded random')
+  assert.deepEqual(npk16, npk32, 'padded 16-byte random should equal explicit 32-byte zero-padded random')
 })
 
-test('Note.computeNotePublicKey - determinism', (t) => {
+test('Note.computeNotePublicKey - determinism', () => {
   const mpk = hexToBytes('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
   const random = hexToBytes('aabbccdd11223344aabbccdd11223344')
   const npk1 = Note.computeNotePublicKey(mpk, random)
   const npk2 = Note.computeNotePublicKey(mpk, random)
-  t.alike(npk1, npk2, 'same inputs should produce same NPK')
+  assert.deepEqual(npk1, npk2, 'same inputs should produce same NPK')
 })
 
-test('Note.computeNotePublicKey - different inputs produce different NPKs', (t) => {
+test('Note.computeNotePublicKey - different inputs produce different NPKs', () => {
   const mpk1 = hexToBytes('0d40499ad038520838c733cf1d214c953bc02f5f836dcb5ab3d3b0b1df88b560')
   const mpk2 = hexToBytes('2c59cd4733f911ba740da68fb7ba3b873f21daece4e3a105aef12d6414e54ebf')
   const random = hexToBytes('aabbccdd11223344aabbccdd11223344')
 
   const npkA = Note.computeNotePublicKey(mpk1, random)
   const npkB = Note.computeNotePublicKey(mpk2, random)
-  t.not(bytesToHex(npkA, { prefix: true }), bytesToHex(npkB, { prefix: true }), 'different MPKs should produce different NPKs')
+  assert.notEqual(bytesToHex(npkA, { prefix: true }), bytesToHex(npkB, { prefix: true }), 'different MPKs should produce different NPKs')
 
   const random2 = hexToBytes('11223344aabbccdd11223344aabbccdd')
   const npkC = Note.computeNotePublicKey(mpk1, random)
   const npkD = Note.computeNotePublicKey(mpk1, random2)
-  t.not(bytesToHex(npkC, { prefix: true }), bytesToHex(npkD, { prefix: true }), 'different randoms should produce different NPKs')
+  assert.notEqual(bytesToHex(npkC, { prefix: true }), bytesToHex(npkD, { prefix: true }), 'different randoms should produce different NPKs')
 })
 
-test('Note.computeNullifier - engine test vectors', (t) => {
+test('Note.computeNullifier - engine test vectors', () => {
   const vectors = [
     {
       privateKey: '08ad9143ae793cdfe94b77e4e52bc4e9f13666966cffa395e3d412ea4e20480f',
@@ -159,25 +155,25 @@ test('Note.computeNullifier - engine test vectors', (t) => {
       hexToBytes(v.privateKey),
       BigInt(v.position)
     )
-    t.is(bytesToHex(result, { prefix: true }), v.nullifier, `nullifier for position ${v.position}`)
+    assert.equal(bytesToHex(result, { prefix: true }), v.nullifier, `nullifier for position ${v.position}`)
   }
 })
 
-test('Note.computeNullifier - determinism', (t) => {
+test('Note.computeNullifier - determinism', () => {
   const key = hexToBytes('08ad9143ae793cdfe94b77e4e52bc4e9f13666966cffa395e3d412ea4e20480f')
   const result1 = Note.computeNullifier(key, 42n)
   const result2 = Note.computeNullifier(key, 42n)
-  t.alike(result1, result2, 'same inputs should produce same nullifier')
+  assert.deepEqual(result1, result2, 'same inputs should produce same nullifier')
 })
 
-test('Note.computeNullifier - different inputs produce different nullifiers', (t) => {
+test('Note.computeNullifier - different inputs produce different nullifiers', () => {
   const key = hexToBytes('08ad9143ae793cdfe94b77e4e52bc4e9f13666966cffa395e3d412ea4e20480f')
   const nullifier0 = Note.computeNullifier(key, 0n)
   const nullifier1 = Note.computeNullifier(key, 1n)
-  t.not(bytesToHex(nullifier0, { prefix: true }), bytesToHex(nullifier1, { prefix: true }), 'different positions should produce different nullifiers')
+  assert.notEqual(bytesToHex(nullifier0, { prefix: true }), bytesToHex(nullifier1, { prefix: true }), 'different positions should produce different nullifiers')
 
   const key2 = hexToBytes('11299eb10424d82de500a440a2874d12f7c477afb5a3eb31dbb96295cdbcf165')
   const nullifierA = Note.computeNullifier(key, 0n)
   const nullifierB = Note.computeNullifier(key2, 0n)
-  t.not(bytesToHex(nullifierA, { prefix: true }), bytesToHex(nullifierB, { prefix: true }), 'different keys should produce different nullifiers')
+  assert.notEqual(bytesToHex(nullifierA, { prefix: true }), bytesToHex(nullifierB, { prefix: true }), 'different keys should produce different nullifiers')
 })

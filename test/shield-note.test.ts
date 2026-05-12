@@ -1,7 +1,9 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { randomBytes } from '@noble/hashes/utils'
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
-import { hook, test } from 'brittle'
 
 import {
   getPublicViewingKey,
@@ -24,18 +26,12 @@ const ERC20_TOKEN_DATA = {
   tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
 }
 
-/**
- * Brittle does not have a built-in beforeAll/beforeEach hook.
- * The hook() function creates a test that always runs even in --solo mode.
- * Placed at the top of the file, it acts as a setup step that runs before
- * all other tests, ensuring cryptography libs are initialized once.
- */
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('shield-note - create ShieldNote', async (t) => {
+test('shield-note - create ShieldNote', async () => {
   const masterPublicKey = randomBytes(32)
   const shieldNote = new ShieldNote({
     notePublicKey: TEST_NPK,
@@ -45,27 +41,27 @@ test('shield-note - create ShieldNote', async (t) => {
     masterPublicKey,
   })
 
-  t.ok(shieldNote instanceof ShieldNote, 'should create ShieldNote instance')
-  t.is(shieldNote.value, TEST_VALUE, 'should set value correctly')
-  t.alike(
+  assert.ok(shieldNote instanceof ShieldNote, 'should create ShieldNote instance')
+  assert.equal(shieldNote.value, TEST_VALUE, 'should set value correctly')
+  assert.deepEqual(
     shieldNote.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey correctly'
   )
-  t.is(shieldNote.random, TEST_RANDOM, 'should set random correctly')
-  t.is(
+  assert.equal(shieldNote.random, TEST_RANDOM, 'should set random correctly')
+  assert.equal(
     shieldNote.notePublicKey,
     TEST_NPK,
     'should set notePublicKey correctly'
   )
-  t.is(
+  assert.equal(
     shieldNote.tokenHash,
     computeTokenHash(ERC20_TOKEN_DATA),
     'should compute token hash'
   )
 })
 
-test('shield-note - serialize and deserialize', async (t) => {
+test('shield-note - serialize and deserialize', async () => {
   const masterPublicKey = randomBytes(32)
   const shieldNote = new ShieldNote({
     notePublicKey: TEST_NPK,
@@ -76,32 +72,32 @@ test('shield-note - serialize and deserialize', async (t) => {
   })
   const serialized = shieldNote.serialize()
 
-  t.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')
+  assert.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')
 
   const deserialized = ShieldNote.deserialize(serialized)
 
-  t.ok(deserialized instanceof ShieldNote, 'should deserialize to ShieldNote')
-  t.is(deserialized.value, TEST_VALUE, 'should preserve value')
-  t.alike(
+  assert.ok(deserialized instanceof ShieldNote, 'should deserialize to ShieldNote')
+  assert.equal(deserialized.value, TEST_VALUE, 'should preserve value')
+  assert.deepEqual(
     deserialized.masterPublicKey,
     masterPublicKey,
     'should preserve masterPublicKey'
   )
-  t.is(deserialized.random, TEST_RANDOM, 'should preserve random')
-  t.is(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
-  t.is(
+  assert.equal(deserialized.random, TEST_RANDOM, 'should preserve random')
+  assert.equal(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
+  assert.equal(
     deserialized.tokenData.tokenType,
     ERC20_TOKEN_DATA.tokenType,
     'should preserve tokenType'
   )
-  t.alike(
+  assert.deepEqual(
     deserialized.tokenData.tokenAddress,
     ERC20_TOKEN_DATA.tokenAddress,
     'should preserve tokenAddress'
   )
 })
 
-test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t) => {
+test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async () => {
   const viewingPrivateKey = randomBytes(32)
   const masterPublicKey = randomBytes(32)
   const noteRandom = hexToBytes('0x' + 'ef'.repeat(16))
@@ -131,26 +127,26 @@ test('shield-note - fromGeneratedCommitment with GeneratedCommitment', async (t)
 
   const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, masterPublicKey)
 
-  t.ok(shieldNote, 'should create ShieldNote from GeneratedCommitment')
-  t.is(shieldNote!.value, 5000n, 'should set value from preimage')
-  t.alike(
+  assert.ok(shieldNote, 'should create ShieldNote from GeneratedCommitment')
+  assert.equal(shieldNote!.value, 5000n, 'should set value from preimage')
+  assert.deepEqual(
     shieldNote!.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey from parameter'
   )
-  t.is(
+  assert.equal(
     shieldNote!.tokenData.tokenType,
     0,
     'should convert ERC20 string to enum'
   )
-  t.is(
+  assert.equal(
     shieldNote!.random,
     bytesToHex(noteRandom, { prefix: true }),
     'should decrypt random correctly'
   )
 })
 
-test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
+test('shield-note - fromShieldCommitment with ShieldCommitment', async () => {
   // Shielder's key pair
   const shieldPrivateKey = randomBytes(32)
   const shieldKey = getPublicViewingKey(shieldPrivateKey)
@@ -164,7 +160,7 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
 
   // Shielder encrypts: ECDH(shieldPrivateKey, receiverViewingPublicKey)
   const sharedKey = await getSharedSymmetricKey(shieldPrivateKey, receiverViewingPublicKey)
-  t.ok(sharedKey, 'should derive shared key')
+  assert.ok(sharedKey, 'should derive shared key')
   const ciphertext = AES.encryptGCM([noteRandom], sharedKey!)
 
   // On-chain bundle format:
@@ -201,29 +197,29 @@ test('shield-note - fromShieldCommitment with ShieldCommitment', async (t) => {
   const masterPublicKey = randomBytes(32)
   const shieldNote = await ShieldNote.fromShieldCommitment(commitment, viewingPrivateKey, masterPublicKey)
 
-  t.ok(
+  assert.ok(
     shieldNote instanceof ShieldNote,
     'should create ShieldNote from ShieldCommitment'
   )
-  t.is(shieldNote!.value, 1n, 'should set value')
-  t.is(
+  assert.equal(shieldNote!.value, 1n, 'should set value')
+  assert.equal(
     shieldNote!.random,
     bytesToHex(noteRandom, { prefix: true }),
     'should decrypt random correctly'
   )
-  t.is(
+  assert.equal(
     shieldNote!.tokenData.tokenType,
     1,
     'should convert ERC721 string to enum'
   )
-  t.alike(
+  assert.deepEqual(
     shieldNote!.masterPublicKey,
     masterPublicKey,
     'should set masterPublicKey from parameter, not shieldKey'
   )
 })
 
-test('shield-note - fromShieldCommitment returns null for wrong key', async (t) => {
+test('shield-note - fromShieldCommitment returns null for wrong key', async () => {
   // Shielder's key pair
   const shielderPrivateKey = randomBytes(32)
   const shieldKey = getPublicViewingKey(shielderPrivateKey)
@@ -263,10 +259,10 @@ test('shield-note - fromShieldCommitment returns null for wrong key', async (t) 
   const wrongPrivateKey = randomBytes(32)
   const result = await ShieldNote.fromShieldCommitment(commitment, wrongPrivateKey, new Uint8Array(32))
 
-  t.is(result, null, 'should return null when decryption fails')
+  assert.equal(result, null, 'should return null when decryption fails')
 })
 
-test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', async (t) => {
+test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', async () => {
   const viewingPrivateKey = randomBytes(32)
   const noteRandom = randomBytes(16)
 
@@ -296,15 +292,15 @@ test('shield-note - fromGeneratedCommitment ERC1155 token type conversion', asyn
 
   const shieldNote = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, new Uint8Array(32))
 
-  t.ok(shieldNote, 'should create ShieldNote')
-  t.is(
+  assert.ok(shieldNote, 'should create ShieldNote')
+  assert.equal(
     shieldNote!.tokenData.tokenType,
     2,
     'should convert ERC1155 string to enum'
   )
 })
 
-test('shield-note - fromGeneratedCommitment missing random throws', async (t) => {
+test('shield-note - fromGeneratedCommitment missing random throws', async () => {
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -322,12 +318,12 @@ test('shield-note - fromGeneratedCommitment missing random throws', async (t) =>
     encryptedRandom: [] as Uint8Array[],
   }
 
-  t.exception(() => {
+  assert.throws(() => {
     ShieldNote.fromGeneratedCommitment(commitment, new Uint8Array(32), new Uint8Array(32))
   }, 'should throw when random data is missing')
 })
 
-test('shield-note - fromGeneratedCommitment returns null for wrong viewing key', async (t) => {
+test('shield-note - fromGeneratedCommitment returns null for wrong viewing key', async () => {
   const correctKey = randomBytes(32)
   const wrongKey = randomBytes(32)
   const noteRandom = randomBytes(16)
@@ -355,10 +351,10 @@ test('shield-note - fromGeneratedCommitment returns null for wrong viewing key',
   }
 
   const result = ShieldNote.fromGeneratedCommitment(commitment, wrongKey, new Uint8Array(32))
-  t.is(result, null, 'should return null when decryption fails')
+  assert.equal(result, null, 'should return null when decryption fails')
 })
 
-test('shield-note - fromGeneratedCommitment returns null for invalid tokenType', async (t) => {
+test('shield-note - fromGeneratedCommitment returns null for invalid tokenType', async () => {
   const viewingPrivateKey = randomBytes(32)
   const noteRandom = randomBytes(16)
 
@@ -385,10 +381,10 @@ test('shield-note - fromGeneratedCommitment returns null for invalid tokenType',
   }
 
   const result = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, new Uint8Array(32))
-  t.is(result, null, 'should return null for invalid token type')
+  assert.equal(result, null, 'should return null for invalid token type')
 })
 
-test('shield-note - serialize and deserialize ERC721', async (t) => {
+test('shield-note - serialize and deserialize ERC721', async () => {
   const masterPublicKey = randomBytes(32)
   const erc721TokenData = {
     tokenType: 1,
@@ -406,12 +402,12 @@ test('shield-note - serialize and deserialize ERC721', async (t) => {
   const serialized = shieldNote.serialize()
   const deserialized = ShieldNote.deserialize(serialized)
 
-  t.is(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
-  t.alike(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
-  t.is(deserialized.value, 1n, 'should preserve value')
+  assert.equal(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
+  assert.deepEqual(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
+  assert.equal(deserialized.value, 1n, 'should preserve value')
 })
 
-test('shield-note - serialize and deserialize with optional fields', async (t) => {
+test('shield-note - serialize and deserialize with optional fields', async () => {
   const masterPublicKey = randomBytes(32)
   const shieldNote = new ShieldNote({
     notePublicKey: TEST_NPK,
@@ -426,11 +422,11 @@ test('shield-note - serialize and deserialize with optional fields', async (t) =
   const serialized = shieldNote.serialize()
   const deserialized = ShieldNote.deserialize(serialized)
 
-  t.is(deserialized.shieldFee, 500n, 'should preserve shieldFee')
-  t.is(deserialized.blockNumber, 12345678, 'should preserve blockNumber')
+  assert.equal(deserialized.shieldFee, 500n, 'should preserve shieldFee')
+  assert.equal(deserialized.blockNumber, 12345678, 'should preserve blockNumber')
 })
 
-test('shield-note - fromGeneratedCommitment lowercase tokenType', async (t) => {
+test('shield-note - fromGeneratedCommitment lowercase tokenType', async () => {
   const viewingPrivateKey = randomBytes(32)
   const noteRandom = randomBytes(16)
 
@@ -457,11 +453,11 @@ test('shield-note - fromGeneratedCommitment lowercase tokenType', async (t) => {
   }
 
   const result = ShieldNote.fromGeneratedCommitment(commitment, viewingPrivateKey, randomBytes(32))
-  t.ok(result, 'should handle lowercase tokenType')
-  t.is(result!.tokenData.tokenType, 0, 'should convert to enum')
+  assert.ok(result, 'should handle lowercase tokenType')
+  assert.equal(result!.tokenData.tokenType, 0, 'should convert to enum')
 })
 
-test('shield-note - fromShieldCommitment throws for short encryptedBundle', async (t) => {
+test('shield-note - fromShieldCommitment throws for short encryptedBundle', async () => {
   const commitment = {
     hash: new Uint8Array(32),
     treeNumber: 0,
@@ -480,7 +476,7 @@ test('shield-note - fromShieldCommitment throws for short encryptedBundle', asyn
     shieldKey: randomBytes(32),
   }
 
-  await t.exception(async () => {
+  await assert.rejects(async () => {
     await ShieldNote.fromShieldCommitment(commitment, randomBytes(32), randomBytes(32))
   }, 'should throw for encryptedBundle with < 3 elements')
 })

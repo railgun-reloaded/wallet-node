@@ -1,21 +1,23 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+
 import { bytesToHex } from '@railgun-reloaded/bytes'
-import { test } from 'brittle'
 
 import {
   sha512HMAC,
   xorBytesInPlace,
 } from '../src/encoding'
 
-test('encoding - sha512HMAC', (t) => {
+test('encoding - sha512HMAC', () => {
   const key = new Uint8Array([1, 2, 3, 4])
   const data = new Uint8Array([5, 6, 7, 8])
   const result = sha512HMAC(key, data)
 
-  t.ok(result instanceof Uint8Array, 'should return Uint8Array')
-  t.is(result.length, 64, 'should return 64 bytes (512 bits)')
+  assert.ok(result instanceof Uint8Array, 'should return Uint8Array')
+  assert.equal(result.length, 64, 'should return 64 bytes (512 bits)')
 })
 
-test('encoding - sha512HMAC known vectors', (t) => {
+test('encoding - sha512HMAC known vectors', () => {
   const vectors = [
     {
       key: new Uint8Array([170]),
@@ -35,16 +37,16 @@ test('encoding - sha512HMAC known vectors', (t) => {
   ]
 
   for (const v of vectors) {
-    t.is(bytesToHex(sha512HMAC(v.key, v.data)), v.expected, `HMAC for key=0x${bytesToHex(v.key)}`)
+    assert.equal(bytesToHex(sha512HMAC(v.key, v.data)), v.expected, `HMAC for key=0x${bytesToHex(v.key)}`)
   }
 })
 
-test('encoding - xorBytesInPlace', (t) => {
+test('encoding - xorBytesInPlace', () => {
   const a = new Uint8Array([0xFF, 0x00, 0xAA])
   const b = new Uint8Array([0x0F, 0xF0, 0x55])
   const output = new Uint8Array(3)
 
   xorBytesInPlace(a, b, output, 0)
 
-  t.alike(output, new Uint8Array([0xF0, 0xF0, 0xFF]), 'should XOR bytes correctly')
+  assert.deepEqual(output, new Uint8Array([0xF0, 0xF0, 0xFF]), 'should XOR bytes correctly')
 })

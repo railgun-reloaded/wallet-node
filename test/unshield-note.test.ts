@@ -1,6 +1,8 @@
+import assert from 'node:assert/strict'
+import { before, test } from 'node:test'
+
 import { hexToBytes } from '@railgun-reloaded/bytes'
 import { ActionType } from '@railgun-reloaded/scanner'
-import { hook, test } from 'brittle'
 
 import { initializeCryptographyLibs } from '../src/keys'
 import { UnshieldNote } from '../src/notes/unshield-note'
@@ -18,18 +20,12 @@ const ERC20_TOKEN_DATA = {
   tokenSubID: TEST_TOKEN_SUB_ID_ZERO,
 }
 
-/**
- * Brittle does not have a built-in beforeAll/beforeEach hook.
- * The hook() function creates a test that always runs even in --solo mode.
- * Placed at the top of the file, it acts as a setup step that runs before
- * all other tests, ensuring cryptography libs are initialized once.
- */
-hook('setup cryptography libs', async (t) => {
+before(async () => {
   await initializeCryptographyLibs()
-  t.pass('cryptography libraries initialized')
+  assert.ok(true, 'cryptography libraries initialized')
 })
 
-test('unshield-note - create UnshieldNote', async (t) => {
+test('unshield-note - create UnshieldNote', async () => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
   const hash = 99999999999999999999n
 
@@ -43,17 +39,17 @@ test('unshield-note - create UnshieldNote', async (t) => {
     allowOverride: false,
   })
 
-  t.ok(
+  assert.ok(
     unshieldNote instanceof UnshieldNote,
     'should create UnshieldNote instance'
   )
-  t.is(unshieldNote.value, TEST_VALUE, 'should set value correctly')
-  t.is(unshieldNote.toAddress, toAddress, 'should set toAddress correctly')
-  t.is(unshieldNote.hash, hash, 'should set hash correctly')
-  t.is(unshieldNote.allowOverride, false, 'should set allowOverride correctly')
+  assert.equal(unshieldNote.value, TEST_VALUE, 'should set value correctly')
+  assert.equal(unshieldNote.toAddress, toAddress, 'should set toAddress correctly')
+  assert.equal(unshieldNote.hash, hash, 'should set hash correctly')
+  assert.equal(unshieldNote.allowOverride, false, 'should set allowOverride correctly')
 })
 
-test('unshield-note - serialize and deserialize', async (t) => {
+test('unshield-note - serialize and deserialize', async () => {
   const toAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
   const hash = 99999999999999999999n
 
@@ -68,23 +64,23 @@ test('unshield-note - serialize and deserialize', async (t) => {
   })
   const serialized = unshieldNote.serialize()
 
-  t.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')
+  assert.ok(serialized instanceof Uint8Array, 'should serialize to Uint8Array')
 
   const deserialized = UnshieldNote.deserialize(serialized)
 
-  t.ok(
+  assert.ok(
     deserialized instanceof UnshieldNote,
     'should deserialize to UnshieldNote'
   )
-  t.is(deserialized.value, TEST_VALUE, 'should preserve value')
-  t.is(deserialized.toAddress, toAddress, 'should preserve toAddress')
-  t.is(deserialized.hash, hash, 'should preserve hash')
-  t.is(deserialized.allowOverride, true, 'should preserve allowOverride')
-  t.is(deserialized.random, TEST_RANDOM, 'should preserve random')
-  t.is(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
+  assert.equal(deserialized.value, TEST_VALUE, 'should preserve value')
+  assert.equal(deserialized.toAddress, toAddress, 'should preserve toAddress')
+  assert.equal(deserialized.hash, hash, 'should preserve hash')
+  assert.equal(deserialized.allowOverride, true, 'should preserve allowOverride')
+  assert.equal(deserialized.random, TEST_RANDOM, 'should preserve random')
+  assert.equal(deserialized.notePublicKey, TEST_NPK, 'should preserve notePublicKey')
 })
 
-test('unshield-note - fromUnshield ERC20', async (t) => {
+test('unshield-note - fromUnshield ERC20', async () => {
   const unshieldData = {
     actionType: ActionType.Unshield,
     to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
@@ -101,30 +97,30 @@ test('unshield-note - fromUnshield ERC20', async (t) => {
 
   const unshieldNote = UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
 
-  t.ok(
+  assert.ok(
     unshieldNote instanceof UnshieldNote,
     'should create UnshieldNote from unshield data'
   )
-  t.is(unshieldNote.value, TEST_VALUE, 'should set value from amount')
-  t.is(
+  assert.equal(unshieldNote.value, TEST_VALUE, 'should set value from amount')
+  assert.equal(
     unshieldNote.tokenData.tokenType,
     0,
     'should convert ERC20 string to enum'
   )
-  t.is(
+  assert.equal(
     unshieldNote.allowOverride,
     false,
     'should default allowOverride to false'
   )
-  t.ok(unshieldNote.hash > 0n, 'should compute hash')
+  assert.ok(unshieldNote.hash > 0n, 'should compute hash')
 
   // Hash should include amount + fee (not just amount)
   const noFeeData = { ...unshieldData, fee: 0n }
   const noFeeNote = UnshieldNote.fromUnshield(noFeeData, TEST_RANDOM)
-  t.not(unshieldNote.hash, noFeeNote.hash, 'hash should differ when fee is included')
+  assert.notEqual(unshieldNote.hash, noFeeNote.hash, 'hash should differ when fee is included')
 })
 
-test('unshield-note - fromUnshield ERC721', async (t) => {
+test('unshield-note - fromUnshield ERC721', async () => {
   const unshieldData = {
     actionType: ActionType.Unshield,
     to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
@@ -143,14 +139,14 @@ test('unshield-note - fromUnshield ERC721', async (t) => {
 
   const unshieldNote = UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
 
-  t.is(
+  assert.equal(
     unshieldNote.tokenData.tokenType,
     1,
     'should convert ERC721 string to enum'
   )
 })
 
-test('unshield-note - fromUnshield ERC1155', async (t) => {
+test('unshield-note - fromUnshield ERC1155', async () => {
   const unshieldData = {
     actionType: ActionType.Unshield,
     to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
@@ -169,14 +165,14 @@ test('unshield-note - fromUnshield ERC1155', async (t) => {
 
   const unshieldNote = UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
 
-  t.is(
+  assert.equal(
     unshieldNote.tokenData.tokenType,
     2,
     'should convert ERC1155 string to enum'
   )
 })
 
-test('unshield-note - fromUnshield invalid tokenType throws', async (t) => {
+test('unshield-note - fromUnshield invalid tokenType throws', async () => {
   const unshieldData = {
     actionType: ActionType.Unshield,
     to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
@@ -191,23 +187,23 @@ test('unshield-note - fromUnshield invalid tokenType throws', async (t) => {
     eventLogIndex: 0,
   }
 
-  t.exception(() => {
+  assert.throws(() => {
     UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
   }, 'should throw for invalid token type string')
 })
 
-test('unshield-note - getAmountFeeFromValue', (t) => {
+test('unshield-note - getAmountFeeFromValue', () => {
   const { amount, fee } = UnshieldNote.getAmountFeeFromValue(10000n, 25n)
-  t.is(fee, 25n, 'should compute fee as 0.25% of value')
-  t.is(amount, 9975n, 'should compute amount as value minus fee')
-  t.is(amount + fee, 10000n, 'amount + fee should equal original value')
+  assert.equal(fee, 25n, 'should compute fee as 0.25% of value')
+  assert.equal(amount, 9975n, 'should compute amount as value minus fee')
+  assert.equal(amount + fee, 10000n, 'amount + fee should equal original value')
 
   const zeroFee = UnshieldNote.getAmountFeeFromValue(10000n, 0n)
-  t.is(zeroFee.fee, 0n, 'should return zero fee for zero basis points')
-  t.is(zeroFee.amount, 10000n, 'should return full amount for zero basis points')
+  assert.equal(zeroFee.fee, 0n, 'should return zero fee for zero basis points')
+  assert.equal(zeroFee.amount, 10000n, 'should return full amount for zero basis points')
 })
 
-test('unshield-note - serialize and deserialize ERC721', async (t) => {
+test('unshield-note - serialize and deserialize ERC721', async () => {
   const erc721TokenData = {
     tokenType: 1,
     tokenAddress: TEST_TOKEN_ADDRESS,
@@ -227,12 +223,12 @@ test('unshield-note - serialize and deserialize ERC721', async (t) => {
   const serialized = unshieldNote.serialize()
   const deserialized = UnshieldNote.deserialize(serialized)
 
-  t.is(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
-  t.alike(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
-  t.is(deserialized.value, 1n, 'should preserve value')
+  assert.equal(deserialized.tokenData.tokenType, 1, 'should preserve ERC721 tokenType')
+  assert.deepEqual(deserialized.tokenData.tokenSubID, erc721TokenData.tokenSubID, 'should preserve tokenSubID')
+  assert.equal(deserialized.value, 1n, 'should preserve value')
 })
 
-test('unshield-note - fromUnshield with zero amount and fee', async (t) => {
+test('unshield-note - fromUnshield with zero amount and fee', async () => {
   const unshieldData = {
     actionType: ActionType.Unshield,
     to: hexToBytes('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'),
@@ -248,42 +244,42 @@ test('unshield-note - fromUnshield with zero amount and fee', async (t) => {
   }
 
   const note = UnshieldNote.fromUnshield(unshieldData, TEST_RANDOM)
-  t.is(note.value, 0n, 'should handle zero amount')
-  t.ok(note.hash >= 0n, 'should compute valid hash')
+  assert.equal(note.value, 0n, 'should handle zero amount')
+  assert.ok(note.hash >= 0n, 'should compute valid hash')
 })
 
-test('unshield-note - getAmountFeeFromValue zero value', (t) => {
+test('unshield-note - getAmountFeeFromValue zero value', () => {
   const { amount, fee } = UnshieldNote.getAmountFeeFromValue(0n, 25n)
-  t.is(fee, 0n, 'fee of zero value is zero')
-  t.is(amount, 0n, 'amount of zero value is zero')
+  assert.equal(fee, 0n, 'fee of zero value is zero')
+  assert.equal(amount, 0n, 'amount of zero value is zero')
 })
 
-test('unshield-note - getAmountFeeFromValue 100% fee', (t) => {
+test('unshield-note - getAmountFeeFromValue 100% fee', () => {
   const { amount, fee } = UnshieldNote.getAmountFeeFromValue(10000n, 10000n)
-  t.is(fee, 10000n, 'fee should equal full value')
-  t.is(amount, 0n, 'amount should be zero')
+  assert.equal(fee, 10000n, 'fee should equal full value')
+  assert.equal(amount, 0n, 'amount should be zero')
 })
 
-test('unshield-note - getAmountFeeFromValue over 100% fee', (t) => {
+test('unshield-note - getAmountFeeFromValue over 100% fee', () => {
   const { amount, fee } = UnshieldNote.getAmountFeeFromValue(10000n, 15000n)
-  t.is(fee, 15000n, 'fee exceeds value')
-  t.is(amount, -5000n, 'amount goes negative')
+  assert.equal(fee, 15000n, 'fee exceeds value')
+  assert.equal(amount, -5000n, 'amount goes negative')
 })
 
-test('unshield-note - getAmountFeeFromValue boundary thresholds', (t) => {
+test('unshield-note - getAmountFeeFromValue boundary thresholds', () => {
   const below1 = UnshieldNote.getAmountFeeFromValue(100n, 25n)
-  t.is(below1.fee, 0n, 'fee rounds to 0 for small values')
-  t.is(below1.amount, 100n, 'full amount preserved below threshold')
+  assert.equal(below1.fee, 0n, 'fee rounds to 0 for small values')
+  assert.equal(below1.amount, 100n, 'full amount preserved below threshold')
 
   const below2 = UnshieldNote.getAmountFeeFromValue(399n, 25n)
-  t.is(below2.fee, 0n, 'fee still 0 at 399')
-  t.is(below2.amount, 399n, 'full amount at 399')
+  assert.equal(below2.fee, 0n, 'fee still 0 at 399')
+  assert.equal(below2.amount, 399n, 'full amount at 399')
 
   const atThreshold = UnshieldNote.getAmountFeeFromValue(400n, 25n)
-  t.is(atThreshold.fee, 1n, 'fee becomes 1 at 400')
-  t.is(atThreshold.amount, 399n, 'amount is 399 at threshold')
+  assert.equal(atThreshold.fee, 1n, 'fee becomes 1 at 400')
+  assert.equal(atThreshold.amount, 399n, 'amount is 399 at threshold')
 
   const above = UnshieldNote.getAmountFeeFromValue(10001n, 25n)
-  t.is(above.fee, 25n, 'fee is 25 for 10001')
-  t.is(above.amount, 9976n, 'amount is 9976 for 10001')
+  assert.equal(above.fee, 25n, 'fee is 25 for 10001')
+  assert.equal(above.amount, 9976n, 'amount is 9976 for 10001')
 })
