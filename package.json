@@ -11,8 +11,7 @@
     "pretest": "npm run build",
     "test": "npm run build && brittle ./test/**/*.test.js",
     "test:only": "npm run build && brittle --solo ./test/**/*.test.js",
-    "prepack": "npm run build",
-    "postinstall": "./postinstall.sh"
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",
