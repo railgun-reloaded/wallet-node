@@ -1,5 +1,3 @@
-import * as ed25519 from '@noble/ed25519'
-import { ExtendedPoint as Point, getPublicKey } from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
@@ -7,7 +5,10 @@ import { eddsa, initCircomlib, initializeEddsa, poseidon } from '@railgun-reload
 
 import { xorBytesInPlace } from './encoding'
 
+type Ed25519Module = typeof import('@noble/ed25519')
+
 let cryptoInitialized = false
+let ed25519: Ed25519Module | undefined
 
 /**
  * Asserts that cryptography libraries have been initialized.
@@ -25,19 +26,20 @@ const CURVE_L = BigInt(
 
 const CURVE_L_BYTES = bigIntToBytes(CURVE_L, 32)
 
-// Set the SHA-512 implementation
-// https://github.com/paulmillr/noble-ed25519/blob/main/README.md#enabling-synchronous-methods
-// Sync methods can be used now:
-// ed25519.getPublicKey(privKey);
-// ed25519.sign(msg, privKey);
-// ed25519.verify(signature, msg, pubKey);
+async function loadEd25519 (): Promise<Ed25519Module> {
+  if (ed25519 === undefined) {
+    ed25519 = await import('@noble/ed25519')
+    ed25519.etc.sha512Sync = (...m) => sha512(ed25519!.etc.concatBytes(...m))
+  }
+  return ed25519
+}
 
-/**
- * SHA-512 hash function synchronous implementation.
- * @param m - Variable number of Uint8Array arguments to concatenate and hash
- * @returns The SHA-512 hash (512-bit/64 bytes) of the concatenated input bytes
- */
-ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
+function getEd25519 (): Ed25519Module {
+  if (ed25519 === undefined) {
+    throw new Error('Cryptography libraries not initialized. Call initializeCryptographyLibs() first.')
+  }
+  return ed25519
+}
 
 /**
  * Initializes the cryptography libraries required for the application.
@@ -47,6 +49,7 @@ ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m))
  * @returns A promise that resolves when the cryptography libraries are successfully initialized.
  */
 const initializeCryptographyLibs = async () => {
+  await loadEd25519()
   await initCircomlib('pure')
   await initCircomlib('wasm')
   await initializeEddsa()
@@ -75,7 +78,7 @@ const getPublicSpendingKey = (privateKey: Uint8Array): [Uint8Array, Uint8Array] 
 const getPublicViewingKey = (
   privateViewingKey: Uint8Array
 ): Uint8Array => {
-  return getPublicKey(privateViewingKey)
+  return getEd25519().getPublicKey(privateViewingKey)
 }
 
 /**
@@ -214,6 +217,7 @@ const scalarMultiplyJavascript = (
   point: Uint8Array,
   scalar: Uint8Array
 ) => {
+  const { ExtendedPoint: Point } = getEd25519()
   const pk = Point.fromHex(point)
   return pk.multiply(bytesToBigInt(scalar)).toRawBytes()
 }
@@ -237,12 +241,14 @@ const getRandomScalar = (): Uint8Array => {
  * @returns The scalar as a Uint8Array
  */
 const seedToScalar = (seed: Uint8Array): Uint8Array => {
+  const { CURVE } = getEd25519()
+
   // Hash to 512 bit value as per FIPS-186
   const seedHash = sha512(seed)
 
   // Return (seedHash mod (n - 1)) + 1 to fit to range 0 < scalar < n
   return bigIntToBytes(
-    (bytesToBigInt(seedHash) % ed25519.CURVE.n) - 1n + 1n,
+    (bytesToBigInt(seedHash) % CURVE.n) - 1n + 1n,
     32
   )
 }
@@ -285,6 +291,7 @@ const getNoteBlindingKeys = (
   blindedSenderViewingKey: Uint8Array;
   blindedReceiverViewingKey: Uint8Array;
 } => {
+  const { ExtendedPoint: Point } = getEd25519()
   const blindingScalar = getBlindingScalar(sharedRandom, senderRandom)
 
   // Get public key points
@@ -318,13 +325,14 @@ const unblindNoteKey = (
   senderRandom: Uint8Array
 ): Uint8Array | null => {
   try {
+    const ed = getEd25519()
     const blindingScalar = getBlindingScalar(sharedRandom, senderRandom)
 
     // Create curve point instance from ephemeral key bytes
-    const point = Point.fromHex(blindedNoteKey)
+    const point = ed.ExtendedPoint.fromHex(blindedNoteKey)
 
     // Invert the scalar to undo blinding multiplication operation
-    const inverse = ed25519.etc.invert(blindingScalar, ed25519.CURVE.n)
+    const inverse = ed.etc.invert(blindingScalar, ed.CURVE.n)
 
     // Unblind by multiplying by the inverted scalar
     const unblinded = point.multiply(inverse)

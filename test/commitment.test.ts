@@ -21,6 +21,7 @@ import { computeTokenHash } from '../src/notes/token-utils'
 
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
 const TEST_VALUE = 1000000000000000000n // 1 ETH
+const EMPTY_MEMO = new Uint8Array(0)
 
 const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 
@@ -73,6 +74,7 @@ test('commitment - decryptCommitment with invalid key returns null', async () =>
     ciphertext,
     blindedViewingKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -96,6 +98,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender with invalid keys returns
     blindedReceiverKey,
     blindedSenderKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -150,6 +153,7 @@ test('commitment - decryptCommitment successful roundtrip', async () => {
     ciphertext,
     blindedReceiverViewingKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -200,6 +204,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender identifies receiver', asy
     blindedReceiverViewingKey,
     blindedSenderViewingKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -262,6 +267,7 @@ test('commitment - real-world two-party encrypt/decrypt', async () => {
     ciphertext,
     blindedSenderViewingKey,
     receiverPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -278,6 +284,7 @@ test('commitment - real-world two-party encrypt/decrypt', async () => {
     ciphertext,
     blindedReceiverViewingKey,
     senderPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
   assert.ok(senderResult !== null, 'sender should also decrypt successfully')
@@ -291,6 +298,7 @@ test('commitment - real-world two-party encrypt/decrypt', async () => {
     ciphertext,
     blindedSenderViewingKey,
     thirdPartyKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
   assert.equal(thirdPartyResult, null, 'third party should not decrypt')
@@ -303,6 +311,7 @@ test('commitment - real-world two-party encrypt/decrypt', async () => {
     blindedReceiverViewingKey,
     blindedSenderViewingKey,
     receiverPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
   assert.ok(fullResult.receiverData !== null, 'receiver data should be present')
@@ -338,6 +347,7 @@ test('commitment - decryptCommitment with ciphertext data < 3 blocks returns nul
     ciphertext,
     blindedReceiverViewingKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -375,6 +385,7 @@ test('commitment - decryptCommitment with randomValue block < 32 bytes returns n
     ciphertext,
     blindedReceiverViewingKey,
     viewingPrivateKey,
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -395,6 +406,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded receiv
     new Uint8Array(0),
     randomBytes(32),
     randomBytes(32),
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -415,6 +427,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender with empty blinded sender
     randomBytes(32),
     new Uint8Array(0),
     randomBytes(32),
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 
@@ -435,6 +448,7 @@ test('commitment - decryptCommitmentAsReceiverOrSender with both keys empty', as
     new Uint8Array(0),
     new Uint8Array(0),
     randomBytes(32),
+    EMPTY_MEMO,
     mockTokenDataGetter
   )
 

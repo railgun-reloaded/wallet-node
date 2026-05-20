@@ -19,11 +19,17 @@ interface DecryptedCommitmentData {
  *   [0]: Encoded Master Public Key
  *   [1]: Token hash
  *   [2]: Random (16 bytes) + Value (16 bytes)
+ *
+ * For commitments where the V2 contract emitted real memo bytes, those bytes
+ * are part of the AES-GCM tag input and must be appended to the ciphertext
+ * data array before decryption. Empty memo (length 0) means no append, which
+ * matches the contract's "no memo" semantics.
  * @param txidVersion - The TXID version (V2 or V3)
  * @param chain - The chain this commitment belongs to
  * @param ciphertext - The encrypted ciphertext from the commitment
  * @param blindedViewingKey - The blinded viewing key (sender or receiver)
  * @param viewingPrivateKey - The wallet's viewing private key
+ * @param memo - Flattened memo bytes from the commitment. Empty → no append.
  * @param tokenDataGetter - Resolves token hashes to full token data
  * @returns The decrypted data or null if decryption fails
  */
@@ -33,6 +39,7 @@ async function decryptCommitment (
   ciphertext: Ciphertext,
   blindedViewingKey: Uint8Array,
   viewingPrivateKey: Uint8Array,
+  memo: Uint8Array,
   tokenDataGetter: TokenDataGetter
 ): Promise<DecryptedCommitmentData | null> {
   if (txidVersion !== TXIDVersion.V2_PoseidonMerkle) {
@@ -46,7 +53,10 @@ async function decryptCommitment (
       return null
     }
 
-    const decryptedCiphertext = AES.decryptGCM(ciphertext, sharedKey)
+    const gcmInput = memo.length > 0
+      ? { iv: ciphertext.iv, tag: ciphertext.tag, data: [...ciphertext.data, memo] }
+      : ciphertext
+    const decryptedCiphertext = AES.decryptGCM(gcmInput, sharedKey)
 
     if (decryptedCiphertext.length < 3) {
       return null
@@ -86,6 +96,7 @@ async function decryptCommitment (
  * @param blindedReceiverViewingKey - The blinded receiver viewing key
  * @param blindedSenderViewingKey - The blinded sender viewing key
  * @param viewingPrivateKey - The wallet's viewing private key
+ * @param memo - Flattened memo bytes from the commitment. Empty → no append.
  * @param tokenDataGetter - Resolves token hashes to full token data
  * @returns Object with receiver and sender decrypted data (either or both may be non-null)
  */
@@ -96,6 +107,7 @@ async function decryptCommitmentAsReceiverOrSender (
   blindedReceiverViewingKey: Uint8Array,
   blindedSenderViewingKey: Uint8Array,
   viewingPrivateKey: Uint8Array,
+  memo: Uint8Array,
   tokenDataGetter: TokenDataGetter
 ): Promise<{ receiverData: DecryptedCommitmentData | null, senderData: DecryptedCommitmentData | null }> {
   // ECDH: to derive the shared key, combine your private key with the OTHER
@@ -108,6 +120,7 @@ async function decryptCommitmentAsReceiverOrSender (
         ciphertext,
         blindedSenderViewingKey,
         viewingPrivateKey,
+        memo,
         tokenDataGetter
       )
       : null,
@@ -118,6 +131,7 @@ async function decryptCommitmentAsReceiverOrSender (
         ciphertext,
         blindedReceiverViewingKey,
         viewingPrivateKey,
+        memo,
         tokenDataGetter
       )
       : null,
