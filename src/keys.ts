@@ -1,3 +1,4 @@
+import type * as Ed25519 from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
@@ -5,7 +6,7 @@ import { eddsa, initCircomlib, initializeEddsa, poseidon } from '@railgun-reload
 
 import { xorBytesInPlace } from './encoding'
 
-type Ed25519Module = typeof import('@noble/ed25519')
+type Ed25519Module = typeof Ed25519
 
 let cryptoInitialized = false
 let ed25519: Ed25519Module | undefined
@@ -26,14 +27,29 @@ const CURVE_L = BigInt(
 
 const CURVE_L_BYTES = bigIntToBytes(CURVE_L, 32)
 
+/**
+ * Lazily imports the @noble/ed25519 module and wires up its synchronous sha512
+ * hook, caching the module for subsequent calls.
+ * @returns A promise that resolves to the loaded ed25519 module.
+ */
 async function loadEd25519 (): Promise<Ed25519Module> {
   if (ed25519 === undefined) {
     ed25519 = await import('@noble/ed25519')
+    /**
+     * Synchronous sha512 implementation required by @noble/ed25519.
+     * @param m - Byte arrays to concatenate and hash.
+     * @returns The sha512 digest of the concatenated input.
+     */
     ed25519.etc.sha512Sync = (...m) => sha512(ed25519!.etc.concatBytes(...m))
   }
   return ed25519
 }
 
+/**
+ * Returns the previously loaded @noble/ed25519 module.
+ * @returns The loaded ed25519 module.
+ * @throws {Error} If the cryptography libraries have not been initialized.
+ */
 function getEd25519 (): Ed25519Module {
   if (ed25519 === undefined) {
     throw new Error('Cryptography libraries not initialized. Call initializeCryptographyLibs() first.')

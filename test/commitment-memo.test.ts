@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
 
 import { randomBytes } from '@noble/hashes/utils'
-import { bigIntToBytes, stripHexPrefix, hexToBytes } from '@railgun-reloaded/bytes'
+import { bigIntToBytes, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
 import {
@@ -19,6 +19,13 @@ const TEST_CHAIN = { type: ChainType.EVM, id: 11155111 }
 const EMPTY_MEMO = new Uint8Array(0)
 
 const mockTokenDataGetter: TokenDataGetter = {
+  /**
+   * Resolves token data from a token hash by treating its last 20 bytes as an ERC20 address.
+   * @param _txidVersion - Unused TXID version (test stub).
+   * @param _chain - Unused chain identifier (test stub).
+   * @param tokenHash - Hex token hash whose trailing 20 bytes form the token address.
+   * @returns The resolved token data for the hash.
+   */
   async getTokenDataFromHash (_txidVersion, _chain, tokenHash) {
     const cleanHash = stripHexPrefix(tokenHash).toLowerCase()
     const addressHex = cleanHash.slice(24) // last 20 bytes
@@ -34,6 +41,12 @@ before(async () => {
   await initializeCryptographyLibs()
 })
 
+/**
+ * Builds a V2 commitment ciphertext for the given memo, splitting the memo block
+ * off the wire data while keeping it under the shared GCM tag.
+ * @param memoPlaintext - Memo bytes to include; an empty array omits the memo.
+ * @returns The ciphertext, the separated wire memo, and the keys needed to decrypt it.
+ */
 async function buildCiphertextWithOptionalMemo (memoPlaintext: Uint8Array): Promise<{
   ciphertext: { iv: Uint8Array, tag: Uint8Array, data: Uint8Array[] }
   wireMemo: Uint8Array
