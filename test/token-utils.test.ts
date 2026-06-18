@@ -3,7 +3,7 @@ import { before, test } from 'node:test'
 
 import { bytesToBigInt, hexToBytes } from '@railgun-reloaded/bytes'
 
-import { initializeCryptographyLibs } from '../src/keys'
+import { initializeCryptographyLibs } from '../src/keys.js'
 import {
   assertValidNoteToken,
   computeTokenHash,
@@ -13,7 +13,7 @@ import {
   getReadableTokenAddress,
   getTokenDataERC20,
   serializeTokenData,
-} from '../src/notes/token-utils'
+} from '../src/notes/token-utils.js'
 
 const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_VALUE = 1000000000000000000n // 1 ETH

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
 
-import { initializeCryptographyLibs } from '../src/keys'
-import { DERIVATION_PATH_PREFIXES, deriveNodes, derivePathsForIndex } from '../src/wallet/derivation'
+import { initializeCryptographyLibs } from '../src/keys.js'
+import { DERIVATION_PATH_PREFIXES, deriveNodes, derivePathsForIndex } from '../src/wallet/derivation.js'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 

@@ -1,8 +1,8 @@
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3'
 import { bigIntToBytes, bytesToBigInt, bytesToHex, hexToBytes, padBytesLeft } from '@railgun-reloaded/bytes'
 
-import type { TokenData } from './definitions'
-import { SNARK_PRIME, TokenType } from './definitions'
+import type { TokenData } from './definitions.js'
+import { SNARK_PRIME, TokenType } from './definitions.js'
 
 /**
  * Computes the token hash for ERC20 tokens.

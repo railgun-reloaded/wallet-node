@@ -2,9 +2,9 @@ import { bytesToHex, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import type { CiphertextCTR } from '@railgun-reloaded/cryptography'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import type { NoteAnnotationData } from './definitions'
-import { MEMO_SENDER_RANDOM_NULL, OutputType } from './definitions'
-import { WalletInfo } from './wallet-info'
+import type { NoteAnnotationData } from './definitions.js'
+import { MEMO_SENDER_RANDOM_NULL, OutputType } from './definitions.js'
+import { WalletInfo } from './wallet-info.js'
 
 /**
  * Memo encoding, decoding, and V2 annotation data encryption/decryption.

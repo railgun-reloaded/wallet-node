@@ -1,10 +1,10 @@
 import { bigIntToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { assertCryptoInitialized } from '../keys'
+import { assertCryptoInitialized } from '../keys.js'
 
-import type { TokenData } from './definitions'
-import { assertValidNoteToken, computeTokenHash } from './token-utils'
+import type { TokenData } from './definitions.js'
+import { assertValidNoteToken, computeTokenHash } from './token-utils.js'
 
 /**
  * Base parameters shared by all note types.

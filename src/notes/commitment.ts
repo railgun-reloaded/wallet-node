@@ -1,10 +1,10 @@
 import { bytesToBigInt, bytesToHex } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { getSharedSymmetricKey } from '../keys'
+import { getSharedSymmetricKey } from '../keys.js'
 
-import type { Chain, Ciphertext, TokenData, TokenDataGetter } from './definitions'
-import { TXIDVersion } from './definitions'
+import type { Chain, Ciphertext, TokenData, TokenDataGetter } from './definitions.js'
+import { TXIDVersion } from './definitions.js'
 
 interface DecryptedCommitmentData {
   random: string

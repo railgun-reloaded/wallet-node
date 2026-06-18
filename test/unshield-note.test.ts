@@ -4,8 +4,8 @@ import { before, test } from 'node:test'
 import { hexToBytes } from '@railgun-reloaded/bytes'
 import { ActionType } from '@railgun-reloaded/scanner'
 
-import { initializeCryptographyLibs } from '../src/keys'
-import { UnshieldNote } from '../src/notes/unshield-note'
+import { initializeCryptographyLibs } from '../src/keys.js'
+import { UnshieldNote } from '../src/notes/unshield-note.js'
 
 const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)

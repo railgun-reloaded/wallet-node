@@ -2,13 +2,13 @@ import { decode, encode } from '@msgpack/msgpack'
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import { getSharedSymmetricKey } from '../keys'
+import { getSharedSymmetricKey } from '../keys.js'
 
-import type { GeneratedCommitment, ShieldCommitment } from './definitions'
-import { TokenType } from './definitions'
-import type { NoteParams } from './note'
-import { Note } from './note'
-import { deserializeTokenData, serializeTokenData } from './token-utils'
+import type { GeneratedCommitment, ShieldCommitment } from './definitions.js'
+import { TokenType } from './definitions.js'
+import type { NoteParams } from './note.js'
+import { Note } from './note.js'
+import { deserializeTokenData, serializeTokenData } from './token-utils.js'
 
 /**
  * Parameters for constructing a ShieldNote.

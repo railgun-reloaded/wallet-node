@@ -10,10 +10,10 @@ import {
   getPublicViewingKey,
   getSharedSymmetricKey,
   initializeCryptographyLibs,
-} from '../src/keys'
-import { decryptCommitment } from '../src/notes/commitment'
-import type { TokenDataGetter } from '../src/notes/definitions'
-import { ChainType, TXIDVersion } from '../src/notes/definitions'
+} from '../src/keys.js'
+import { decryptCommitment } from '../src/notes/commitment.js'
+import type { TokenDataGetter } from '../src/notes/definitions.js'
+import { ChainType, TXIDVersion } from '../src/notes/definitions.js'
 
 const TEST_CHAIN = { type: ChainType.EVM, id: 11155111 }
 const EMPTY_MEMO = new Uint8Array(0)

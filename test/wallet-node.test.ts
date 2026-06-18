@@ -4,9 +4,9 @@ import { before, test } from 'node:test'
 import { stringify } from '@railgun-reloaded/0zk-addresses'
 import { hexToBytes } from '@railgun-reloaded/bytes'
 
-import { initializeCryptographyLibs } from '../src/keys'
-import { RailgunWallet } from '../src/wallet/railgun-wallet'
-import { WalletNode } from '../src/wallet/wallet-node'
+import { initializeCryptographyLibs } from '../src/keys.js'
+import { RailgunWallet } from '../src/wallet/railgun-wallet.js'
+import { WalletNode } from '../src/wallet/wallet-node.js'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 const TEST_MNEMONIC_2 = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'

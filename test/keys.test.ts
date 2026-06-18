@@ -15,7 +15,7 @@ import {
   initializeCryptographyLibs,
   seedToScalar,
   unblindNoteKey,
-} from '../src/keys'
+} from '../src/keys.js'
 
 before(async () => {
   await initializeCryptographyLibs()

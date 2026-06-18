@@ -3,9 +3,9 @@ import { before, test } from 'node:test'
 
 import { randomBytes } from '@noble/hashes/utils'
 
-import { initializeCryptographyLibs } from '../src/keys'
-import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions'
-import { Memo } from '../src/notes/memo'
+import { initializeCryptographyLibs } from '../src/keys.js'
+import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions.js'
+import { Memo } from '../src/notes/memo.js'
 
 before(async () => {
   await initializeCryptographyLibs()

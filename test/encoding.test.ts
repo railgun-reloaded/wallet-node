@@ -6,7 +6,7 @@ import { bytesToHex } from '@railgun-reloaded/bytes'
 import {
   sha512HMAC,
   xorBytesInPlace,
-} from '../src/encoding'
+} from '../src/encoding.js'
 
 test('encoding - sha512HMAC', () => {
   const key = new Uint8Array([1, 2, 3, 4])

@@ -9,9 +9,9 @@ import {
   getPublicViewingKey,
   getSharedSymmetricKey,
   initializeCryptographyLibs,
-} from '../src/keys'
-import { ShieldNote } from '../src/notes/shield-note'
-import { computeTokenHash } from '../src/notes/token-utils'
+} from '../src/keys.js'
+import { ShieldNote } from '../src/notes/shield-note.js'
+import { computeTokenHash } from '../src/notes/token-utils.js'
 
 const TEST_TOKEN_ADDRESS = hexToBytes('0x1234567890123456789012345678901234567890')
 const TEST_TOKEN_SUB_ID_ZERO = new Uint8Array(32)

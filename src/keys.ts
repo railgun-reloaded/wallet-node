@@ -4,7 +4,7 @@ import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
 import { eddsa, initCircomlib, initializeEddsa, poseidon } from '@railgun-reloaded/cryptography'
 
-import { xorBytesInPlace } from './encoding'
+import { xorBytesInPlace } from './encoding.js'
 
 type Ed25519Module = typeof Ed25519
 

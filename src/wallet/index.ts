@@ -1,2 +1,2 @@
-export * from './railgun-wallet'
-export * from './wallet-node'
+export * from './railgun-wallet.js'
+export * from './wallet-node.js'

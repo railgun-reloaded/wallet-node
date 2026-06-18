@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { WalletInfo } from '../src/notes/wallet-info'
+import { WalletInfo } from '../src/notes/wallet-info.js'
 
 test('wallet-info - encode and decode roundtrip', () => {
   const source = 'railway wallet'

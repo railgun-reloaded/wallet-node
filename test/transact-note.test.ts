@@ -4,12 +4,12 @@ import { before, test } from 'node:test'
 import { randomBytes } from '@noble/hashes/utils'
 import { bytesToBigInt, hexToBytes, stripHexPrefix } from '@railgun-reloaded/bytes'
 
-import { initializeCryptographyLibs } from '../src/keys'
-import type { TokenDataGetter } from '../src/notes/definitions'
-import { ChainType, TXIDVersion } from '../src/notes/definitions'
-import { Note } from '../src/notes/note'
-import { computeTokenHash } from '../src/notes/token-utils'
-import { TransactNote } from '../src/notes/transact-note'
+import { initializeCryptographyLibs } from '../src/keys.js'
+import type { TokenDataGetter } from '../src/notes/definitions.js'
+import { ChainType, TXIDVersion } from '../src/notes/definitions.js'
+import { Note } from '../src/notes/note.js'
+import { computeTokenHash } from '../src/notes/token-utils.js'
+import { TransactNote } from '../src/notes/transact-note.js'
 
 const TEST_CHAIN = { type: ChainType.EVM, id: 1 }
 

@@ -1,6 +1,6 @@
-import { sha512HMAC } from '../encoding'
+import { sha512HMAC } from '../encoding.js'
 
-import type { KeyNode } from './types'
+import type { KeyNode } from './types.js'
 
 const CURVE_SEED = new TextEncoder().encode('babyjubjub seed')
 

@@ -1,11 +1,11 @@
 import { decode, encode } from '@msgpack/msgpack'
 import { bytesToBigInt, bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 
-import type { Unshield } from './definitions'
-import { TokenType } from './definitions'
-import type { NoteParams } from './note'
-import { Note } from './note'
-import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils'
+import type { Unshield } from './definitions.js'
+import { TokenType } from './definitions.js'
+import type { NoteParams } from './note.js'
+import { Note } from './note.js'
+import { computeTokenHash, deserializeTokenData, serializeTokenData } from './token-utils.js'
 
 /**
  * Parameters for constructing an UnshieldNote.

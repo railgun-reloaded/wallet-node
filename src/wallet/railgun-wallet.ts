@@ -1,11 +1,11 @@
-import { deriveNodes } from './derivation'
+import { deriveNodes } from './derivation.js'
 import type {
   SpendingKeyPair,
   SpendingPublicKey,
   ViewingKeyPair,
-} from './types'
-import type { WalletNodes } from './wallet-node'
-import { WalletNode } from './wallet-node'
+} from './types.js'
+import type { WalletNodes } from './wallet-node.js'
+import { WalletNode } from './wallet-node.js'
 
 type RailgunKeystore = {
   spendingKeyPair: SpendingKeyPair;

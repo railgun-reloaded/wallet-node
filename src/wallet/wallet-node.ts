@@ -1,10 +1,10 @@
 import { poseidon } from '@railgun-reloaded/cryptography'
 
-import { assertCryptoInitialized, getPublicSpendingKey, getPublicViewingKey } from '../keys'
-import { Mnemonic } from '../mnemonic'
+import { assertCryptoInitialized, getPublicSpendingKey, getPublicViewingKey } from '../keys.js'
+import { Mnemonic } from '../mnemonic/index.js'
 
-import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from './bip32'
-import type { KeyNode, SpendingKeyPair, ViewingKeyPair } from './types'
+import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from './bip32.js'
+import type { KeyNode, SpendingKeyPair, ViewingKeyPair } from './types.js'
 
 const HARDENED_OFFSET = 0x80000000 as const
 type WalletNodes = { spending: WalletNode; viewing: WalletNode }

@@ -3,8 +3,8 @@ import { test } from 'node:test'
 
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 
-import { Mnemonic } from '../src/mnemonic'
-import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32'
+import { Mnemonic } from '../src/mnemonic/index.js'
+import { childKeyDerivationHardened, getMasterKeyFromSeed, getPathSegments } from '../src/wallet/bip32.js'
 
 const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 const MNEMONIC_ABANDON = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'

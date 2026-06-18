@@ -3,10 +3,10 @@ import { parse as parse0zkAddress, stringify as stringify0zkAddress } from '@rai
 import { bytesToBigInt, bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
-import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions'
-import type { NoteParams } from './note'
-import { Note } from './note'
-import { computeTokenHash, getTokenDataERC20 } from './token-utils'
+import type { AddressData, Chain, Ciphertext, EncryptedData, LegacyCiphertext, TXIDVersion, TokenData, TokenDataGetter } from './definitions.js'
+import type { NoteParams } from './note.js'
+import { Note } from './note.js'
+import { computeTokenHash, getTokenDataERC20 } from './token-utils.js'
 
 /**
  * Parameters for constructing a TransactNote.
