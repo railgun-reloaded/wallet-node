@@ -2,7 +2,7 @@ import type * as Ed25519 from '@noble/ed25519'
 import { sha256, sha512 } from '@noble/hashes/sha2'
 import { randomBytes } from '@noble/hashes/utils'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
-import { eddsa, initCircomlib, initializeEddsa, poseidon } from '@railgun-reloaded/cryptography'
+import { eddsa, poseidon } from '@railgun-reloaded/cryptography'
 
 import { xorBytesInPlace } from './encoding.js'
 
@@ -58,18 +58,12 @@ function getEd25519 (): Ed25519Module {
 }
 
 /**
- * Initializes the cryptography libraries required for the application.
- * This function sets up Circomlib and EDDSA cryptographic primitives and sets the
+ * Initializes the asynchronous cryptography dependencies (ed25519) and sets the
  * cryptoInitialized flag, enabling all functions guarded by assertCryptoInitialized().
- * @throws {Error} Throws an error if EDDSA fails to initialize.
  * @returns A promise that resolves when the cryptography libraries are successfully initialized.
  */
 const initializeCryptographyLibs = async () => {
   await loadEd25519()
-  await initCircomlib('pure')
-  await initCircomlib('wasm')
-  await initializeEddsa()
-  if (typeof eddsa === 'undefined') { throw new Error('EDDSA failed to initialize.') }
   cryptoInitialized = true
 }
 
