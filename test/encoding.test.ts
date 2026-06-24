@@ -41,6 +41,39 @@ test('encoding - sha512HMAC known vectors', () => {
   }
 })
 
+test('encoding - sha512HMAC has no key-length restriction', () => {
+  const empty = sha512HMAC(new Uint8Array([]), new Uint8Array([]))
+  assert.equal(empty.length, 64, 'empty key and data should still produce a 64-byte digest')
+
+  // Keys longer than the SHA-512 block size (128 bytes) are pre-hashed internally,
+  // so there is no upper bound on key length.
+  const longKey = sha512HMAC(new Uint8Array(200).fill(7), new Uint8Array([1, 2, 3]))
+  assert.equal(longKey.length, 64, 'over-length key should produce a 64-byte digest')
+})
+
+test('encoding - sha512HMAC is deterministic', () => {
+  const key = new Uint8Array([9, 8, 7])
+  const data = new Uint8Array([1, 2, 3, 4, 5])
+  assert.equal(
+    bytesToHex(sha512HMAC(key, data)),
+    bytesToHex(sha512HMAC(key, data)),
+    'same inputs should yield identical output'
+  )
+})
+
+test('encoding - sha512HMAC rejects non-byte-array input', () => {
+  assert.throws(
+    () => sha512HMAC(new Uint8Array([1]), 123 as unknown as Uint8Array),
+    /Uint8Array expected/,
+    'non-byte-array data should throw'
+  )
+  assert.throws(
+    () => sha512HMAC(null as unknown as Uint8Array, new Uint8Array([1])),
+    /Uint8Array expected/,
+    'null key should throw'
+  )
+})
+
 test('encoding - xorBytesInPlace', () => {
   const a = new Uint8Array([0xFF, 0x00, 0xAA])
   const b = new Uint8Array([0x0F, 0xF0, 0x55])

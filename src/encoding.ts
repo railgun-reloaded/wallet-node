@@ -1,13 +1,14 @@
-import { createHmac } from 'node:crypto'
+import { hmac } from '@noble/hashes/hmac'
+import { sha512 } from '@noble/hashes/sha2'
 
 /**
  * Computes the HMAC (Hash-based Message Authentication Code) using the SHA-512 hash function.
  * @param key - The secret key used for the HMAC computation as a `Uint8Array`.
  * @param data - The input data to be hashed as a `Uint8Array`.
- * @returns A `Uint8Array` containing the resulting HMAC digest.
+ * @returns A `Uint8Array` containing the resulting 64-byte HMAC digest.
  */
 const sha512HMAC = (key: Uint8Array, data: Uint8Array): Uint8Array => {
-  return createHmac('sha512', key).update(data).digest()
+  return hmac(sha512, key, data)
 }
 
 /**
