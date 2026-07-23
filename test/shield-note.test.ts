@@ -740,6 +740,40 @@ test('shield-note - create rejects unsupported token type', async () => {
   }, /Unsupported token type/, 'should reject token types other than ERC20 and ERC721')
 })
 
+test('shield-note - create rejects tokenSubID that is not exactly 32 bytes', async () => {
+  assert.throws(() => {
+    ShieldNote.create({
+      masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+      value: TEST_VALUE,
+      tokenData: { ...ERC20_TOKEN_DATA, tokenSubID: new Uint8Array(0) },
+    })
+  }, /Token sub ID must be 32 bytes/, 'should reject empty ERC20 tokenSubID')
+
+  assert.throws(() => {
+    ShieldNote.create({
+      masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+      value: TEST_VALUE,
+      tokenData: { ...ERC20_TOKEN_DATA, tokenSubID: new Uint8Array(16) },
+    })
+  }, /Token sub ID must be 32 bytes/, 'should reject short ERC20 tokenSubID')
+
+  assert.throws(() => {
+    ShieldNote.create({
+      masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+      value: 1n,
+      tokenData: { ...VECTOR_ERC721_TOKEN_DATA, tokenSubID: new Uint8Array(0) },
+    })
+  }, /Token sub ID must be 32 bytes/, 'should reject empty ERC721 tokenSubID')
+
+  assert.throws(() => {
+    ShieldNote.create({
+      masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+      value: 1n,
+      tokenData: { ...VECTOR_ERC721_TOKEN_DATA, tokenSubID: hexToBytes('0x01') },
+    })
+  }, /Token sub ID must be 32 bytes/, 'should reject short ERC721 tokenSubID')
+})
+
 test('shield-note - create rejects non-zero ERC20 tokenSubID', async () => {
   assert.throws(() => {
     ShieldNote.create({

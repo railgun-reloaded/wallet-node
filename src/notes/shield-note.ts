@@ -90,6 +90,9 @@ class ShieldNote extends Note {
     if (tokenData.tokenType !== TokenType.ERC20 && tokenData.tokenType !== TokenType.ERC721) {
       throw new Error(`Unsupported token type for shield note creation: ${tokenData.tokenType}`)
     }
+    if (tokenData.tokenSubID.length !== 32) {
+      throw new Error(`Token sub ID must be 32 bytes. Got ${tokenData.tokenSubID.length} bytes.`)
+    }
     if (value <= 0n) {
       throw new Error(`Shield note value must be positive. Got ${value}.`)
     }
