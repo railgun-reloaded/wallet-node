@@ -40,6 +40,23 @@ const VECTOR_RANDOM = hexToBytes('0x' + '02'.repeat(16))
 const VECTOR_NPK = '0x161282156a67c78ebb2a008653f4e06d1096f77266b9b07e5cd811de4cb9e9ed'
 const VECTOR_HASH = '0x21c5374b6f96417510c5ec1036970c027a4eaaad84ce43727453e7d67d1c84f8'
 
+// ERC721 fixed vector derived with the same community implementations
+// (ethereum-cryptography keccak256 and @railgun-community/circomlibjs poseidon):
+//   tokenHash = keccak256(tokenType(32) || tokenAddress(32) || tokenSubID(32)) mod SNARK_PRIME
+//   hash      = poseidon([npk, tokenHash, value])
+// with the same masterPublicKey/random as above (npk = VECTOR_NPK), and
+//   tokenType  = 1 (ERC721)
+//   tokenAddress = TEST_TOKEN_ADDRESS
+//   tokenSubID = 1 (32 bytes)
+//   value      = 1
+const VECTOR_ERC721_TOKEN_DATA = {
+  tokenType: 1,
+  tokenAddress: TEST_TOKEN_ADDRESS,
+  tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
+}
+const VECTOR_ERC721_TOKEN_HASH = '075b737079de804169d5e006add4da4942063ab4fce32268c469c49460e52be0'
+const VECTOR_ERC721_HASH = '0x1cef1d8f80a46090ea1b751505583a5ff1e331b4d155d070632d17c5937da9c3'
+
 before(async () => {
   await initializeCryptographyLibs()
   assert.ok(true, 'cryptography libraries initialized')
@@ -647,28 +664,80 @@ test('shield-note - create rejects invalid random length', async () => {
   }, /16 bytes/, 'should reject short random')
 })
 
-test('shield-note - create rejects non-ERC20 token data', async () => {
-  const erc721TokenData = {
-    tokenType: 1,
-    tokenAddress: TEST_TOKEN_ADDRESS,
-    tokenSubID: hexToBytes('0x0000000000000000000000000000000000000000000000000000000000000001'),
-  }
+test('shield-note - create builds ERC721 note', async () => {
+  const shieldNote = ShieldNote.create({
+    masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+    value: 1n,
+    tokenData: VECTOR_ERC721_TOKEN_DATA,
+    random: VECTOR_RANDOM,
+  })
 
+  assert.ok(shieldNote instanceof ShieldNote, 'should create ShieldNote instance')
+  assert.equal(shieldNote.value, 1n, 'should carry ERC721 value of 1')
+  assert.equal(shieldNote.notePublicKey, VECTOR_NPK, 'should derive notePublicKey')
+  assert.equal(
+    shieldNote.tokenHash,
+    computeTokenHash(VECTOR_ERC721_TOKEN_DATA),
+    'should compute NFT token hash'
+  )
+
+  const deserialized = ShieldNote.deserialize(shieldNote.serialize())
+
+  assert.equal(deserialized.notePublicKey, shieldNote.notePublicKey, 'should preserve notePublicKey')
+  assert.equal(deserialized.value, shieldNote.value, 'should preserve value')
+  assert.equal(deserialized.random, shieldNote.random, 'should preserve random')
+  assert.equal(deserialized.tokenHash, shieldNote.tokenHash, 'should preserve tokenHash')
+  assert.deepEqual(deserialized.masterPublicKey, shieldNote.masterPublicKey, 'should preserve masterPublicKey')
+  assert.equal(deserialized.tokenData.tokenType, shieldNote.tokenData.tokenType, 'should preserve tokenType')
+  assert.deepEqual(deserialized.tokenData.tokenAddress, shieldNote.tokenData.tokenAddress, 'should preserve tokenAddress')
+  assert.deepEqual(deserialized.tokenData.tokenSubID, shieldNote.tokenData.tokenSubID, 'should preserve tokenSubID')
+})
+
+test('shield-note - create ERC721 commitment hash matches fixed community vector', async () => {
+  const shieldNote = ShieldNote.create({
+    masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
+    value: 1n,
+    tokenData: VECTOR_ERC721_TOKEN_DATA,
+    random: VECTOR_RANDOM,
+  })
+
+  assert.equal(
+    shieldNote.tokenHash,
+    VECTOR_ERC721_TOKEN_HASH,
+    'NFT token hash should match community token hash vector'
+  )
+
+  const hash = Note.getHash(
+    hexToBytes(shieldNote.notePublicKey),
+    hexToBytes(shieldNote.tokenHash),
+    shieldNote.value
+  )
+
+  assert.equal(
+    bytesToHex(hash, { prefix: true }),
+    VECTOR_ERC721_HASH,
+    'commitment hash should match community shield note hash vector'
+  )
+})
+
+test('shield-note - create rejects ERC721 value other than 1', async () => {
   assert.throws(() => {
     ShieldNote.create({
       masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
-      value: 1n,
-      tokenData: erc721TokenData,
+      value: 2n,
+      tokenData: VECTOR_ERC721_TOKEN_DATA,
     })
-  }, /ERC20/, 'should reject ERC721 token data')
+  }, /value of 1/, 'should reject ERC721 value above 1')
+})
 
+test('shield-note - create rejects unsupported token type', async () => {
   assert.throws(() => {
     ShieldNote.create({
       masterPublicKey: VECTOR_MASTER_PUBLIC_KEY,
       value: TEST_VALUE,
       tokenData: { ...ERC20_TOKEN_DATA, tokenType: 2 },
     })
-  }, /ERC20/, 'should reject any other token type')
+  }, /Unsupported token type/, 'should reject token types other than ERC20 and ERC721')
 })
 
 test('shield-note - create rejects non-zero ERC20 tokenSubID', async () => {

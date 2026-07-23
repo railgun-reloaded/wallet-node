@@ -9,7 +9,7 @@ import type { GeneratedCommitment, ShieldCommitment, TokenData } from './definit
 import { TokenType } from './definitions.js'
 import type { NoteParams } from './note.js'
 import { Note } from './note.js'
-import { deserializeTokenData, serializeTokenData } from './token-utils.js'
+import { assertValidNoteToken, deserializeTokenData, serializeTokenData } from './token-utils.js'
 
 /**
  * Parameters for constructing a ShieldNote.
@@ -70,9 +70,10 @@ class ShieldNote extends Note {
 
   /**
    * Creates a new ShieldNote for a recipient identified by their master public key.
-   * Derives the note public key from the master public key and the note random,
-   * generating a fresh 16-byte random when one is not supplied. The note carries
-   * the full pre-fee shield value; the shield fee is deducted on-chain.
+   * Supports ERC20 and ERC721 token data. Derives the note public key from the
+   * master public key and the note random, generating a fresh 16-byte random when
+   * one is not supplied. The note carries the full pre-fee shield value; the
+   * shield fee is deducted on-chain.
    * @param params - The creation parameters
    * @returns A new ShieldNote instance
    * @throws {Error} If a parameter is invalid or initializeCryptographyLibs() has not been called.
@@ -86,11 +87,8 @@ class ShieldNote extends Note {
     if (params.random !== undefined && params.random.length !== 16) {
       throw new Error(`Random must be 16 bytes. Got ${params.random.length} bytes.`)
     }
-    if (tokenData.tokenType !== TokenType.ERC20) {
-      throw new Error('Shield note creation only supports ERC20 token data.')
-    }
-    if (!tokenData.tokenSubID.every((byte) => byte === 0)) {
-      throw new Error('ERC20 note cannot have tokenSubID parameter.')
+    if (tokenData.tokenType !== TokenType.ERC20 && tokenData.tokenType !== TokenType.ERC721) {
+      throw new Error(`Unsupported token type for shield note creation: ${tokenData.tokenType}`)
     }
     if (value <= 0n) {
       throw new Error(`Shield note value must be positive. Got ${value}.`)
@@ -98,6 +96,7 @@ class ShieldNote extends Note {
     if (value > UINT_120_MAX) {
       throw new Error(`Shield note value must fit uint120. Got ${value}.`)
     }
+    assertValidNoteToken(tokenData, value)
 
     const random = params.random ?? randomBytes(16)
     const notePublicKey = Note.computeNotePublicKey(masterPublicKey, random)
