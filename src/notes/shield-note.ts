@@ -1,10 +1,11 @@
 import { decode, encode } from '@msgpack/msgpack'
+import { randomBytes } from '@noble/hashes/utils'
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
 import { getSharedSymmetricKey } from '../keys.js'
 
-import type { GeneratedCommitment, ShieldCommitment } from './definitions.js'
+import type { GeneratedCommitment, ShieldCommitment, TokenData } from './definitions.js'
 import { TokenType } from './definitions.js'
 import type { NoteParams } from './note.js'
 import { Note } from './note.js'
@@ -18,6 +19,19 @@ type ShieldNoteParams = NoteParams & {
   shieldFee?: bigint | undefined
   blockNumber?: number | undefined
 }
+
+/**
+ * Parameters for creating a new ShieldNote for a recipient.
+ */
+type ShieldNoteCreateParams = {
+  masterPublicKey: Uint8Array
+  value: bigint
+  tokenData: TokenData
+  random?: Uint8Array | undefined
+}
+
+/** Maximum note value representable in the contract's uint120 preimage field. */
+const UINT_120_MAX = 2n ** 120n - 1n
 
 /**
  * Represents a Shield note for converting public assets into private RAILGUN notes.
@@ -52,6 +66,49 @@ class ShieldNote extends Note {
     this.masterPublicKey = params.masterPublicKey
     this.shieldFee = params.shieldFee
     this.blockNumber = params.blockNumber
+  }
+
+  /**
+   * Creates a new ShieldNote for a recipient identified by their master public key.
+   * Derives the note public key from the master public key and the note random,
+   * generating a fresh 16-byte random when one is not supplied. The note carries
+   * the full pre-fee shield value; the shield fee is deducted on-chain.
+   * @param params - The creation parameters
+   * @returns A new ShieldNote instance
+   * @throws {Error} If a parameter is invalid or initializeCryptographyLibs() has not been called.
+   */
+  static create (params: ShieldNoteCreateParams): ShieldNote {
+    const { masterPublicKey, value, tokenData } = params
+
+    if (masterPublicKey.length !== 32) {
+      throw new Error(`Master public key must be 32 bytes. Got ${masterPublicKey.length} bytes.`)
+    }
+    if (params.random !== undefined && params.random.length !== 16) {
+      throw new Error(`Random must be 16 bytes. Got ${params.random.length} bytes.`)
+    }
+    if (tokenData.tokenType !== TokenType.ERC20) {
+      throw new Error('Shield note creation only supports ERC20 token data.')
+    }
+    if (!tokenData.tokenSubID.every((byte) => byte === 0)) {
+      throw new Error('ERC20 note cannot have tokenSubID parameter.')
+    }
+    if (value <= 0n) {
+      throw new Error(`Shield note value must be positive. Got ${value}.`)
+    }
+    if (value > UINT_120_MAX) {
+      throw new Error(`Shield note value must fit uint120. Got ${value}.`)
+    }
+
+    const random = params.random ?? randomBytes(16)
+    const notePublicKey = Note.computeNotePublicKey(masterPublicKey, random)
+
+    return new ShieldNote({
+      notePublicKey: bytesToHex(notePublicKey, { prefix: true }),
+      value,
+      tokenData,
+      random: bytesToHex(random, { prefix: true }),
+      masterPublicKey,
+    })
   }
 
   /**
@@ -90,7 +147,7 @@ class ShieldNote extends Note {
       random,
       masterPublicKey: hexToBytes(masterPublicKey),
       shieldFee: shieldFee ? BigInt(shieldFee) : undefined,
-      blockNumber,
+      blockNumber: blockNumber ?? undefined,
     })
   }
 
@@ -222,5 +279,5 @@ class ShieldNote extends Note {
   }
 }
 
-export type { ShieldNoteParams }
+export type { ShieldNoteParams, ShieldNoteCreateParams }
 export { ShieldNote }
