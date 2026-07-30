@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
 
-import { randomBytes } from '@noble/hashes/utils'
+import { randomBytes } from '@noble/hashes/utils.js'
 
 import { initializeCryptographyLibs } from '../src/keys.js'
 import { MEMO_SENDER_RANDOM_NULL, OutputType } from '../src/notes/definitions.js'

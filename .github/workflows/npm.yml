@@ -22,5 +22,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Validate package
+        run: npm run check:package
+
+      - name: Resolve browser bundle
+        run: npm run check:browser
+
       - name: Test
         run: npm run test

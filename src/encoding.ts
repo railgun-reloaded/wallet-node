@@ -1,5 +1,5 @@
-import { hmac } from '@noble/hashes/hmac'
-import { sha512 } from '@noble/hashes/sha2'
+import { hmac } from '@noble/hashes/hmac.js'
+import { sha512 } from '@noble/hashes/sha2.js'
 
 /**
  * Computes the HMAC (Hash-based Message Authentication Code) using the SHA-512 hash function.

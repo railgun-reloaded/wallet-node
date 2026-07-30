@@ -254,7 +254,7 @@ test('keys - getNoteBlindingKeys with same sender/receiver key', async () => {
 })
 
 test('keys - ECDH shared key commutativity', async () => {
-  const { randomBytes } = await import('@noble/hashes/utils')
+  const { randomBytes } = await import('@noble/hashes/utils.js')
 
   const sender = randomBytes(32)
   const senderPublic = getPublicViewingKey(sender)
@@ -281,7 +281,7 @@ test('keys - ECDH shared key commutativity', async () => {
 })
 
 test('keys - unblind note keys roundtrip', async () => {
-  const { randomBytes } = await import('@noble/hashes/utils')
+  const { randomBytes } = await import('@noble/hashes/utils.js')
 
   const sender = randomBytes(32)
   const senderPublic = getPublicViewingKey(sender)
@@ -307,7 +307,7 @@ test('keys - unblind note keys roundtrip', async () => {
 })
 
 test('keys - sender random blinding distinction', async () => {
-  const { randomBytes } = await import('@noble/hashes/utils')
+  const { randomBytes } = await import('@noble/hashes/utils.js')
 
   const sender = randomBytes(32)
   const senderPublic = getPublicViewingKey(sender)

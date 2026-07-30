@@ -1,6 +1,6 @@
 import type * as Ed25519 from '@noble/ed25519'
-import { sha256, sha512 } from '@noble/hashes/sha2'
-import { randomBytes } from '@noble/hashes/utils'
+import { sha256, sha512 } from '@noble/hashes/sha2.js'
+import { randomBytes } from '@noble/hashes/utils.js'
 import { bigIntToBytes, bytesToBigInt } from '@railgun-reloaded/bytes'
 import { eddsa, poseidon } from '@railgun-reloaded/cryptography'
 

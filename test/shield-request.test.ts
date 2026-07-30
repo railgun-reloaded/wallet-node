@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
 
-import { randomBytes } from '@noble/hashes/utils'
+import { randomBytes } from '@noble/hashes/utils.js'
 import { bytesToHex, hexToBytes } from '@railgun-reloaded/bytes'
 import { AES } from '@railgun-reloaded/cryptography'
 
