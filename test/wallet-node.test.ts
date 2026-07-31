@@ -5,6 +5,7 @@ import { stringify } from '@railgun-reloaded/0zk-addresses'
 import { hexToBytes } from '@railgun-reloaded/bytes'
 
 import { initializeCryptographyLibs } from '../src/keys.js'
+import { SHIELD_PRIVATE_KEY_SIGNATURE_MESSAGE } from '../src/notes/shield-note.js'
 import { RailgunWallet } from '../src/wallet/railgun-wallet.js'
 import { WalletNode } from '../src/wallet/wallet-node.js'
 
@@ -205,10 +206,9 @@ test('railgun-wallet - deterministic key derivation', async () => {
     'master public key should match expected value')
 })
 
-test('railgun-wallet - RailgunWallet.getShieldPrivateKeySignatureMessage', () => {
-  const message = RailgunWallet.getShieldPrivateKeySignatureMessage()
-
-  assert.equal(message, 'RAILGUN_SHIELD', 'should return correct constant message')
+test('shield-note - SHIELD_PRIVATE_KEY_SIGNATURE_MESSAGE', () => {
+  assert.equal(SHIELD_PRIVATE_KEY_SIGNATURE_MESSAGE, 'RAILGUN_SHIELD',
+    'should return correct constant message')
 })
 
 test('railgun-wallet - Different mnemonics generate different wallets', async () => {

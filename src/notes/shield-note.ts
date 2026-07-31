@@ -34,6 +34,15 @@ type ShieldNoteCreateParams = {
 const UINT_120_MAX = 2n ** 120n - 1n
 
 /**
+ * Message a public wallet signs to derive a shield private key.
+ *
+ * DO NOT MODIFY. The shield private key is derived from a signature over this
+ * exact string, so any change yields a different key and shields created under
+ * the previous message can no longer be decrypted.
+ */
+const SHIELD_PRIVATE_KEY_SIGNATURE_MESSAGE = 'RAILGUN_SHIELD'
+
+/**
  * Represents a Shield note for converting public assets into private RAILGUN notes.
  * This is the entry point for funds entering the privacy system via on-chain shield transactions.
  * Extends {@link Note} with a {@link masterPublicKey} that identifies the receiving wallet.
@@ -282,4 +291,4 @@ class ShieldNote extends Note {
 }
 
 export type { ShieldNoteParams, ShieldNoteCreateParams }
-export { ShieldNote }
+export { SHIELD_PRIVATE_KEY_SIGNATURE_MESSAGE, ShieldNote }

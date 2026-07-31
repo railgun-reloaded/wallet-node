@@ -64,16 +64,6 @@ export class RailgunWallet {
   }
 
   /**
-   * Retrieves the constant signature message used for shield private key operations.
-   * This message is a predefined string that should not be modified.
-   * @returns The constant signature message 'RAILGUN_SHIELD'.
-   */
-  static getShieldPrivateKeySignatureMessage () {
-    // DO NOT MODIFY THIS CONSTANT.
-    return 'RAILGUN_SHIELD'
-  }
-
-  /**
    * Initializes the key pairs and related cryptographic keys for the wallet node.
    * This method retrieves the spending key pair, nullifying key, and viewing key pair
    * from the respective nodes, and computes the master public key using the spending
