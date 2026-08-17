@@ -30,6 +30,9 @@
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "devDependencies": {
+    "@railgun-reloaded/eslint-config": "^1.1.0",
+    "@railgun-reloaded/tsconfig": "^1.2.0",
+    "@types/node": "^24.0.11",
     "esbuild": "^0.28.1",
     "eslint": "^9.24.0",
     "publint": "^0.3.21",
@@ -42,12 +45,9 @@
     "@railgun-reloaded/0zk-addresses": "https://github.com/railgun-reloaded/0zk-addresses#dev",
     "@railgun-reloaded/bytes": "git+https://github.com/railgun-reloaded/bytes.git#dev",
     "@railgun-reloaded/cryptography": "git+https://github.com/railgun-reloaded/cryptography.git#dev",
-    "@railgun-reloaded/eslint-config": "^1.1.0",
     "@railgun-reloaded/scanner": "https://github.com/railgun-reloaded/scanner#dev",
-    "@railgun-reloaded/tsconfig": "^1.2.0",
     "@scure/bip32": "^1.7.0",
     "@scure/bip39": "^1.6.0",
-    "@types/node": "^24.0.11",
     "circomlibjs": "^0.1.7"
   }
 }
